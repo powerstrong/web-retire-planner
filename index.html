@@ -300,6 +300,45 @@
       border-color: rgba(255,255,255,0.85);
     }
 
+    /* ── TOOL NAV ────────────────────────────── */
+    .tool-nav {
+      max-width: 1280px;
+      margin: 0 auto;
+      display: flex;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 22px 28px;
+      border-right: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text);
+      transition: background .18s;
+    }
+    .tool-nav-item:last-child { border-right: none; }
+    .tool-nav-item:hover { background: rgba(255,255,255,0.04); }
+    .tool-nav-item.active { background: rgba(255,255,255,0.05); }
+    .tool-nav-label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+    }
+    .tool-nav-title {
+      font-size: .92rem;
+      font-weight: 300;
+    }
+    .tool-nav-arrow {
+      font-size: .75rem;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+
     /* ── DISCLAIMER ───────────────────────────── */
     .disclaimer {
       max-width: 1280px;
@@ -367,6 +406,20 @@
     </div>
   </div>
 </section>
+
+<!-- TOOL NAV -->
+<div class="tool-nav">
+  <a href="index.html" class="tool-nav-item active">
+    <span class="tool-nav-label">계획</span>
+    <span class="tool-nav-title">은퇴 자금 설계</span>
+    <span class="tool-nav-arrow">→</span>
+  </a>
+  <a href="punching.html" class="tool-nav-item">
+    <span class="tool-nav-label">구조</span>
+    <span class="tool-nav-title">펀칭 전단 검토</span>
+    <span class="tool-nav-arrow">→</span>
+  </a>
+</div>
 
 <!-- MAIN -->
 <div class="main-wrap">

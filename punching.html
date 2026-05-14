@@ -1,0 +1,1316 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>펀칭 전단 검토 — 라임구조엔지니어링</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #111111;
+      --border:  rgba(255,255,255,0.15);
+      --border2: rgba(255,255,255,0.4);
+      --text:    #ffffff;
+      --muted:   rgba(255,255,255,0.45);
+      --success: #4ade80;
+      --info:    #60a5fa;
+      --warning: #fb923c;
+      --danger:  #f87171;
+      --radius:  2px;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── TOP NAV ─────────────────────────────── */
+    .topnav {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-logo {
+      font-size: .78rem;
+      font-weight: 400;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+    }
+    .topnav-back {
+      font-size: .72rem;
+      letter-spacing: .1em;
+      color: var(--muted);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .topnav-back:hover { color: var(--text); }
+
+    /* ── TOOL NAV ────────────────────────────── */
+    .tool-nav {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+    }
+    .tool-nav-item {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      padding: 22px 28px;
+      border-right: 1px solid var(--border);
+      text-decoration: none;
+      color: var(--text);
+      transition: background .18s;
+    }
+    .tool-nav-item:last-child { border-right: none; }
+    .tool-nav-item:hover { background: rgba(255,255,255,0.04); }
+    .tool-nav-item.active { background: rgba(255,255,255,0.05); }
+    .tool-nav-label { font-size: .65rem; text-transform: uppercase; letter-spacing: .14em; color: var(--muted); }
+    .tool-nav-title { font-size: .92rem; font-weight: 300; }
+    .tool-nav-arrow { font-size: .75rem; color: var(--muted); margin-top: 4px; }
+
+    /* ── PAGE HEADER ──────────────────────────── */
+    .page-header {
+      padding: 36px 32px 28px;
+      border-bottom: 1px solid var(--border);
+    }
+    .page-header-sub {
+      font-size: .65rem;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .page-header h1 {
+      font-size: clamp(1.4rem, 3vw, 2.2rem);
+      font-weight: 300;
+      letter-spacing: .02em;
+    }
+    .page-header-meta {
+      margin-top: 10px;
+      font-size: .72rem;
+      color: rgba(255,255,255,0.3);
+      letter-spacing: .05em;
+    }
+
+    /* ── MAIN LAYOUT ──────────────────────────── */
+    .main-wrap {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      align-items: start;
+      min-height: calc(100vh - 130px);
+    }
+
+    /* ── CARD BASE ────────────────────────────── */
+    .card-header {
+      padding: 12px 22px;
+      font-size: .65rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .card-body { padding: 22px 22px 28px; }
+
+    /* ── INPUT PANEL ──────────────────────────── */
+    .input-panel {
+      border-right: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      max-height: 100vh;
+      overflow-y: auto;
+    }
+    .input-panel::-webkit-scrollbar { width: 4px; }
+    .input-panel::-webkit-scrollbar-track { background: transparent; }
+    .input-panel::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.12); }
+
+    .form-group { margin-bottom: 14px; }
+    .form-label {
+      display: block;
+      font-size: .65rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 6px;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap input[type="text"],
+    .input-wrap input[type="number"] {
+      width: 100%;
+      padding: 8px 46px 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .85rem;
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+      transition: border-color .2s, background .2s;
+      outline: none;
+      font-family: inherit;
+    }
+    .input-wrap input:focus {
+      border-color: var(--border2);
+      background: rgba(255,255,255,0.06);
+    }
+    .input-wrap input:disabled {
+      opacity: .3;
+      cursor: not-allowed;
+    }
+    .input-unit {
+      position: absolute;
+      right: 11px;
+      font-size: .68rem;
+      color: var(--muted);
+      pointer-events: none;
+      white-space: nowrap;
+    }
+    select {
+      width: 100%;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .85rem;
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+      transition: border-color .2s;
+      outline: none;
+      font-family: inherit;
+      cursor: pointer;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='rgba(255,255,255,0.3)'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 11px center;
+      padding-right: 28px;
+    }
+    select:focus { border-color: var(--border2); }
+    select option { background: #1e1e1e; color: var(--text); }
+
+    .form-section-title {
+      font-size: .62rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: rgba(255,255,255,0.25);
+      margin: 22px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section-title:first-child { margin-top: 0; }
+
+    /* inline row layout */
+    .form-row {
+      display: grid;
+      gap: 8px;
+    }
+    .form-row-2 { grid-template-columns: 1fr 1fr; }
+    .form-row-3 { grid-template-columns: 1fr 1fr 1fr; }
+    .form-row-auto { grid-template-columns: 80px 1fr; }
+
+    /* static badge */
+    .static-badge {
+      display: inline-block;
+      padding: 8px 11px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .85rem;
+      color: rgba(255,255,255,0.35);
+      background: rgba(255,255,255,0.02);
+      letter-spacing: .05em;
+      line-height: 1;
+    }
+
+    /* checkbox row */
+    .checkbox-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 10px;
+    }
+    .checkbox-row input[type="checkbox"] {
+      width: 14px; height: 14px;
+      accent-color: rgba(255,255,255,0.7);
+      cursor: pointer;
+      flex-shrink: 0;
+    }
+    .checkbox-row label {
+      font-size: .72rem;
+      color: var(--muted);
+      cursor: pointer;
+      letter-spacing: .04em;
+    }
+
+    /* calc button */
+    .btn-calc {
+      display: block;
+      width: 100%;
+      padding: 13px 24px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.55);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: .72rem;
+      font-weight: 400;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+      margin-top: 24px;
+      border-radius: var(--radius);
+    }
+    .btn-calc:hover {
+      background: rgba(255,255,255,0.07);
+      border-color: rgba(255,255,255,0.85);
+    }
+    .btn-calc:active { background: rgba(255,255,255,0.12); }
+
+    /* ── RESULT PANEL ─────────────────────────── */
+    .result-panel {
+      padding: 0;
+      overflow-y: auto;
+    }
+
+    /* placeholder */
+    .result-placeholder {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 14px;
+      color: rgba(255,255,255,0.18);
+    }
+    .result-placeholder .ph-icon {
+      font-size: 2.4rem;
+      opacity: .25;
+    }
+    .result-placeholder p {
+      font-size: .8rem;
+      letter-spacing: .06em;
+    }
+
+    /* calculation sheet */
+    .calc-sheet {
+      display: none;
+      padding: 28px 32px 48px;
+    }
+    .calc-sheet.visible { display: block; }
+
+    /* result badge strip */
+    .result-badge-strip {
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 28px;
+      padding: 18px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .rbadge {
+      padding: 10px 20px;
+      border: 1px solid;
+      font-size: .7rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      border-radius: var(--radius);
+      font-weight: 400;
+    }
+    .rbadge-ok   { border-color: var(--success); color: var(--success); }
+    .rbadge-ng   { border-color: var(--danger);  color: var(--danger); }
+    .rbadge-info { border-color: var(--border2); color: rgba(255,255,255,0.6); }
+
+    /* section heading */
+    .sec-heading {
+      font-size: .65rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.3);
+      margin: 28px 0 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .sec-heading:first-child { margin-top: 0; }
+
+    /* monospace block */
+    .mono-block {
+      font-family: 'JetBrains Mono', 'Cascadia Code', 'Consolas', 'Menlo', monospace;
+      font-size: .8rem;
+      line-height: 2;
+      color: rgba(255,255,255,0.85);
+      white-space: pre;
+      overflow-x: auto;
+    }
+    .mono-block .dim    { color: rgba(255,255,255,0.3); }
+    .mono-block .val    { color: #ffffff; font-weight: 500; }
+    .mono-block .accent { color: var(--info); }
+    .mono-block .ok     { color: var(--success); font-weight: 700; letter-spacing: .08em; }
+    .mono-block .ng     { color: var(--danger);  font-weight: 700; letter-spacing: .08em; }
+    .mono-block .eq-line {
+      display: block;
+      padding-left: 8px;
+      border-left: 2px solid rgba(255,255,255,0.1);
+    }
+
+    /* verdict banner */
+    .verdict-banner {
+      margin-top: 28px;
+      padding: 20px 24px;
+      border: 1px solid;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      border-radius: var(--radius);
+    }
+    .verdict-banner.ok {
+      border-color: rgba(74,222,128,0.4);
+      background: rgba(74,222,128,0.05);
+    }
+    .verdict-banner.ng {
+      border-color: rgba(248,113,113,0.4);
+      background: rgba(248,113,113,0.05);
+    }
+    .verdict-label {
+      font-size: .65rem;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: var(--muted);
+    }
+    .verdict-value {
+      font-size: 1.4rem;
+      font-weight: 300;
+      letter-spacing: .06em;
+    }
+    .verdict-banner.ok  .verdict-value { color: var(--success); }
+    .verdict-banner.ng  .verdict-value { color: var(--danger); }
+    .verdict-eq {
+      font-family: 'JetBrains Mono', 'Consolas', monospace;
+      font-size: .82rem;
+      color: rgba(255,255,255,0.55);
+      text-align: right;
+    }
+
+    /* ── TABS ────────────────────────────────── */
+    .tab-bar {
+      display: flex;
+      border-bottom: 1px solid var(--border);
+      position: sticky;
+      top: 0;
+      background: var(--bg);
+      z-index: 5;
+    }
+    .tab-btn {
+      padding: 13px 24px;
+      font-size: .68rem;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      color: var(--muted);
+      cursor: pointer;
+      border: none;
+      background: transparent;
+      font-family: inherit;
+      border-bottom: 2px solid transparent;
+      transition: color .18s, border-color .18s;
+      margin-bottom: -1px;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active { color: var(--text); border-bottom-color: rgba(255,255,255,0.6); }
+    .tab-pane { display: none; }
+    .tab-pane.active { display: block; }
+
+    /* detail formula block */
+    .detail-sheet {
+      padding: 28px 32px 48px;
+    }
+    .df-section {
+      margin-bottom: 32px;
+    }
+    .df-title {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .18em;
+      color: rgba(255,255,255,0.3);
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 16px;
+    }
+    .df-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 2px 32px;
+      font-family: 'JetBrains Mono','Cascadia Code','Consolas','Menlo',monospace;
+      font-size: .8rem;
+      line-height: 2.1;
+    }
+    .df-formula { color: rgba(255,255,255,0.35); }
+    .df-substituted { color: rgba(255,255,255,0.65); }
+    .df-result {
+      grid-column: 1 / -1;
+      color: #ffffff;
+      padding: 6px 12px;
+      border-left: 2px solid rgba(255,255,255,0.15);
+      margin: 2px 0 10px;
+      font-size: .85rem;
+    }
+    .df-result .r-val { color: var(--info); font-weight: 500; }
+    .df-result .r-gov { color: var(--success); }
+    .df-result .r-ng  { color: var(--danger); }
+
+    /* ── RESPONSIVE ───────────────────────────── */
+    @media (max-width: 860px) {
+      .main-wrap {
+        grid-template-columns: 1fr;
+      }
+      .input-panel {
+        border-right: none;
+        border-bottom: 1px solid var(--border);
+        position: static;
+        max-height: none;
+        overflow-y: visible;
+      }
+      .calc-sheet { padding: 22px 18px 48px; }
+      .page-header { padding: 24px 18px 18px; }
+      .topnav { padding: 14px 18px; }
+    }
+    @media (max-width: 480px) {
+      .mono-block { font-size: .72rem; line-height: 1.85; }
+      .form-row-2 { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <span class="topnav-logo">라임구조엔지니어링</span>
+  <a href="index.html" class="topnav-back">← 메인으로</a>
+</nav>
+
+<!-- TOOL NAV -->
+<div class="tool-nav">
+  <a href="index.html" class="tool-nav-item">
+    <span class="tool-nav-label">계획</span>
+    <span class="tool-nav-title">은퇴 자금 설계</span>
+    <span class="tool-nav-arrow">→</span>
+  </a>
+  <a href="punching.html" class="tool-nav-item active">
+    <span class="tool-nav-label">구조</span>
+    <span class="tool-nav-title">펀칭 전단 검토</span>
+    <span class="tool-nav-arrow">→</span>
+  </a>
+</div>
+
+<!-- PAGE HEADER -->
+<div class="page-header">
+  <div class="page-header-sub">Structural Check / Slab</div>
+  <h1>펀칭 전단 검토</h1>
+  <div class="page-header-meta">KDS 14.20:2021 &nbsp;·&nbsp; ACI 318-25 &nbsp;·&nbsp; Punching Shear Check</div>
+</div>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- LEFT: INPUT -->
+  <div class="input-panel">
+    <div class="card-header">입력 조건</div>
+    <div class="card-body">
+
+      <!-- 기본 정보 -->
+      <div class="form-section-title">기본 정보</div>
+      <div class="form-row form-row-2" style="margin-bottom:14px;">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iName">Name</label>
+          <div class="input-wrap"><input type="text" id="iName" placeholder="검토명 입력" /></div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label">Type</label>
+          <span class="static-badge">슬래브</span>
+        </div>
+      </div>
+      <div class="form-group">
+        <label class="form-label" for="iLocation">위치</label>
+        <select id="iLocation">
+          <option value="interior">내부 (Interior)</option>
+          <option value="edge">단부 (Edge)</option>
+          <option value="corner">모서리 (Corner)</option>
+        </select>
+      </div>
+
+      <!-- 재료강도 -->
+      <div class="form-section-title">재료강도</div>
+      <div class="form-row form-row-2">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iFck">f_ck</label>
+          <div class="input-wrap">
+            <input type="number" id="iFck" value="24" min="15" step="1" />
+            <span class="input-unit">N/mm²</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iFys">f_ys</label>
+          <div class="input-wrap">
+            <input type="number" id="iFys" value="400" min="300" step="10" />
+            <span class="input-unit">N/mm²</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 슬래브 치수 -->
+      <div class="form-section-title">슬래브 치수</div>
+      <div class="form-row form-row-2">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iThk">Thk</label>
+          <div class="input-wrap">
+            <input type="number" id="iThk" value="400" min="100" step="10" />
+            <span class="input-unit">mm</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iCc">Cc (피복)</label>
+          <div class="input-wrap">
+            <input type="number" id="iCc" value="80" min="20" step="5" />
+            <span class="input-unit">mm</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 기둥 -->
+      <div class="form-section-title">기둥</div>
+      <div class="form-group">
+        <label class="form-label" for="iColShape">기둥 형상</label>
+        <select id="iColShape" onchange="onColShapeChange()">
+          <option value="rect">사각기둥</option>
+          <option value="circle">원형기둥</option>
+        </select>
+      </div>
+      <div class="form-row form-row-2" id="rectColInputs">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iCx">Cx</label>
+          <div class="input-wrap">
+            <input type="number" id="iCx" value="400" min="100" step="10" />
+            <span class="input-unit">mm</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iCy">Cy</label>
+          <div class="input-wrap">
+            <input type="number" id="iCy" value="400" min="100" step="10" />
+            <span class="input-unit">mm</span>
+          </div>
+        </div>
+      </div>
+      <div class="form-group" id="circleColInput" style="display:none;">
+        <label class="form-label" for="iDc">Dc (직경)</label>
+        <div class="input-wrap">
+          <input type="number" id="iDc" value="400" min="100" step="10" />
+          <span class="input-unit">mm</span>
+        </div>
+      </div>
+
+      <!-- 사용 철근 -->
+      <div class="form-section-title">사용 철근</div>
+
+      <div class="form-group">
+        <label class="form-label">X축 전단보강근</label>
+        <div class="form-row form-row-auto">
+          <div class="input-wrap">
+            <input type="number" id="iRbxRow" value="2" min="1" max="10" step="1" />
+            <span class="input-unit">열</span>
+          </div>
+          <select id="iRbxBar">
+            <option value="D10">D10</option>
+            <option value="D13">D13</option>
+            <option value="D16" selected>D16</option>
+            <option value="D19">D19</option>
+            <option value="D22">D22</option>
+            <option value="D25">D25</option>
+            <option value="D29">D29</option>
+            <option value="D32">D32</option>
+            <option value="D35">D35</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">Y축 전단보강근</label>
+        <div class="form-row form-row-auto">
+          <div class="input-wrap">
+            <input type="number" id="iRbyRow" value="2" min="1" max="10" step="1" />
+            <span class="input-unit">열</span>
+          </div>
+          <select id="iRbyBar">
+            <option value="D10">D10</option>
+            <option value="D13">D13</option>
+            <option value="D16" selected>D16</option>
+            <option value="D19">D19</option>
+            <option value="D22">D22</option>
+            <option value="D25">D25</option>
+            <option value="D29">D29</option>
+            <option value="D32">D32</option>
+            <option value="D35">D35</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label">기초/슬래브 주근</label>
+        <select id="iMainBar">
+          <option value="D10">D10</option>
+          <option value="D13">D13</option>
+          <option value="D16">D16</option>
+          <option value="D19">D19</option>
+          <option value="D22" selected>D22</option>
+          <option value="D25">D25</option>
+          <option value="D29">D29</option>
+          <option value="D32">D32</option>
+          <option value="D35">D35</option>
+        </select>
+      </div>
+
+      <!-- 불균형 모멘트 -->
+      <div class="form-section-title">불균형 모멘트 휨 전달계수</div>
+      <div class="checkbox-row">
+        <input type="checkbox" id="iGammaDirect" onchange="onGammaCheckChange()" />
+        <label for="iGammaDirect">휨 전달계수를 직접 정의</label>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iGfx">γ_fx</label>
+          <div class="input-wrap">
+            <input type="number" id="iGfx" value="0.6" min="0" max="1" step="0.01" disabled />
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iGfy">γ_fy</label>
+          <div class="input-wrap">
+            <input type="number" id="iGfy" value="0.6" min="0" max="1" step="0.01" disabled />
+          </div>
+        </div>
+      </div>
+
+      <!-- 재하 하중 -->
+      <div class="form-section-title">재하 하중</div>
+      <div class="form-group">
+        <label class="form-label" for="iPu">P_u</label>
+        <div class="input-wrap">
+          <input type="number" id="iPu" value="360" min="0" step="1" />
+          <span class="input-unit">kN</span>
+        </div>
+      </div>
+      <div class="form-row form-row-2">
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iMux">M_ux</label>
+          <div class="input-wrap">
+            <input type="number" id="iMux" value="240" min="0" step="1" />
+            <span class="input-unit">kN·m</span>
+          </div>
+        </div>
+        <div class="form-group" style="margin-bottom:0">
+          <label class="form-label" for="iMuy">M_uy</label>
+          <div class="input-wrap">
+            <input type="number" id="iMuy" value="120" min="0" step="1" />
+            <span class="input-unit">kN·m</span>
+          </div>
+        </div>
+      </div>
+
+      <button class="btn-calc" onclick="runCalc()">계 산</button>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: CALCULATION SHEET -->
+  <div class="result-panel">
+    <div id="resultPlaceholder" class="result-placeholder">
+      <div class="ph-icon">⬡</div>
+      <p>계산 버튼을 눌러 계산을 시작하세요</p>
+    </div>
+
+    <div id="resultTabs" style="display:none;">
+      <div class="tab-bar">
+        <button class="tab-btn active" onclick="switchTab('sheet')">계산서</button>
+        <button class="tab-btn" onclick="switchTab('detail')">상세 수식</button>
+      </div>
+      <div id="tabSheet" class="tab-pane active">
+        <div id="calcSheet" class="calc-sheet visible"></div>
+      </div>
+      <div id="tabDetail" class="tab-pane">
+        <div id="detailSheet" class="detail-sheet"></div>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<script>
+  /* ── 철근 단면적 DB ─────────────────────────── */
+  const REBAR = {
+    D10: { d: 10, As: 71.3  },
+    D13: { d: 13, As: 126.7 },
+    D16: { d: 16, As: 198.6 },
+    D19: { d: 19, As: 286.5 },
+    D22: { d: 22, As: 387.1 },
+    D25: { d: 25, As: 506.7 },
+    D29: { d: 29, As: 642.4 },
+    D32: { d: 32, As: 794.2 },
+    D35: { d: 35, As: 956.6 },
+  };
+
+  /* ── UI callbacks ────────────────────────────── */
+  function onColShapeChange() {
+    const shape = document.getElementById('iColShape').value;
+    document.getElementById('rectColInputs').style.display  = shape === 'rect'   ? '' : 'none';
+    document.getElementById('circleColInput').style.display = shape === 'circle' ? '' : 'none';
+  }
+
+  function switchTab(name) {
+    document.querySelectorAll('.tab-btn').forEach((b,i) => {
+      b.classList.toggle('active', (i===0 && name==='sheet') || (i===1 && name==='detail'));
+    });
+    document.getElementById('tabSheet').classList.toggle('active', name==='sheet');
+    document.getElementById('tabDetail').classList.toggle('active', name==='detail');
+  }
+
+  function onGammaCheckChange() {
+    const checked = document.getElementById('iGammaDirect').checked;
+    document.getElementById('iGfx').disabled = !checked;
+    document.getElementById('iGfy').disabled = !checked;
+  }
+
+  /* ── helpers ─────────────────────────────────── */
+  function g(id)  { return document.getElementById(id); }
+  function gv(id) { return parseFloat(g(id).value); }
+  function gs(id) { return g(id).value; }
+
+  function pad(str, len) {
+    return String(str).padEnd(len);
+  }
+  function padL(str, len) {
+    return String(str).padStart(len);
+  }
+  function f1(v)  { return v.toFixed(1); }
+  function f2(v)  { return v.toFixed(2); }
+  function f3(v)  { return v.toFixed(3); }
+  function f4(v)  { return v.toFixed(4); }
+  function fi(v)  { return Math.round(v).toLocaleString(); }
+
+  /* ceil(As_req / As_bar) */
+  function nBars(As_req, As_bar) {
+    return Math.max(1, Math.ceil(As_req / As_bar));
+  }
+
+  /* HTML escape */
+  function esc(s) {
+    return String(s)
+      .replace(/&/g,'&amp;')
+      .replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;');
+  }
+
+  /* span helpers */
+  function dim(s)    { return `<span class="dim">${esc(s)}</span>`; }
+  function val(s)    { return `<span class="val">${esc(s)}</span>`; }
+  function acc(s)    { return `<span class="accent">${esc(s)}</span>`; }
+  function ok_s(s)   { return `<span class="ok">${esc(s)}</span>`; }
+  function ng_s(s)   { return `<span class="ng">${esc(s)}</span>`; }
+
+  /* ── MAIN CALCULATION ────────────────────────── */
+  function runCalc() {
+    /* --- read inputs --- */
+    const name      = g('iName').value.trim() || '(미입력)';
+    const location  = gs('iLocation');           // interior / edge / corner
+    const fck       = gv('iFck');
+    const fys       = gv('iFys');
+    const Thk       = gv('iThk');
+    const Cc        = gv('iCc');
+    const colShape  = gs('iColShape');           // rect / circle
+    let   Cx, Cy, Dc;
+    if (colShape === 'rect') {
+      Cx = gv('iCx'); Cy = gv('iCy'); Dc = null;
+    } else {
+      Dc = gv('iDc'); Cx = Dc; Cy = Dc;
+    }
+    const rbxRow    = Math.round(gv('iRbxRow'));
+    const rbxBar    = gs('iRbxBar');
+    const rbyRow    = Math.round(gv('iRbyRow'));
+    const rbyBar    = gs('iRbyBar');
+    const mainBar   = gs('iMainBar');
+    const gammaDirect = g('iGammaDirect').checked;
+    const Pu        = gv('iPu');                 // kN
+    const Mux       = gv('iMux');                // kN·m
+    const Muy       = gv('iMuy');                // kN·m
+
+    /* --- constants --- */
+    const lambda = 1.0;
+    const phi    = 0.75;
+    const phim   = 0.85;
+
+    /* --- effective depth --- */
+    const db_main = REBAR[mainBar].d;
+    const d       = Thk - Cc - db_main;
+
+    /* --- critical perimeter --- */
+    let bx, by, bo;
+    if (colShape === 'circle') {
+      bx = Dc + d;
+      by = Dc + d;
+      bo = Math.PI * (Dc + d);
+    } else {
+      bx = Cx + d;
+      by = Cy + d;
+      if (location === 'interior') {
+        bo = 2 * (bx + by);
+      } else if (location === 'edge') {
+        bo = 2 * bx + by;
+      } else { // corner
+        bo = bx + by;
+      }
+    }
+    const Ac = bo * d;  // mm²
+
+    /* αs by location */
+    const alphaS = location === 'interior' ? 40 : location === 'edge' ? 30 : 20;
+
+    /* --- Vc1, Vc2, Vc3 (N) --- */
+    const betaC = (colShape === 'circle') ? 1.0 : Math.max(Cx, Cy) / Math.min(Cx, Cy);
+    const sqFck = Math.sqrt(fck);
+
+    const Vc1 = 0.33 * lambda * sqFck * bo * d;
+    const Vc2 = (0.17 + 0.33 / betaC) * lambda * sqFck * bo * d;
+    const Vc3 = (0.17 + 0.083 * alphaS * d / bo) * lambda * sqFck * bo * d;
+    const Vc  = Math.min(Vc1, Vc2, Vc3);
+
+    const PhiVc_kN     = phi * Vc / 1000;              // kN
+    const PhiVc_stress = phi * Vc / Ac;                // N/mm²
+
+    /* --- gamma_f (휨 전달계수) --- */
+    let gfx, gfy;
+    if (gammaDirect) {
+      gfx = gv('iGfx');
+      gfy = gv('iGfy');
+    } else {
+      gfx = 1 / (1 + (2/3) * Math.sqrt(by / bx));
+      gfy = 1 / (1 + (2/3) * Math.sqrt(bx / by));
+    }
+    const gvx = 1 - gfx;  // γvx
+    const gvy = 1 - gfy;  // γvy
+
+    /* --- X-axis unbalanced moment --- */
+    const Beffx = Cx + 3 * Thk;
+    const Muex  = gfx * Mux;                           // kN·m
+    const Mu_nmm_x = Muex * 1e6;                       // N·mm
+    const Rn_x  = Mu_nmm_x / (phim * Beffx * d * d);
+    const arg_x = 1 - 2 * Rn_x / (0.85 * fck);
+    const rho_x = (arg_x > 0)
+      ? (0.85 * fck / fys) * (1 - Math.sqrt(arg_x))
+      : 0;
+    const As_reqx = rho_x * Beffx * d;
+    const As_mainBar = REBAR[mainBar].As;
+    const n_x = nBars(As_reqx, As_mainBar);
+
+    /* --- Y-axis unbalanced moment --- */
+    const Beffy = Cy + 3 * Thk;
+    const Muey  = gfy * Muy;                           // kN·m
+    const Mu_nmm_y = Muey * 1e6;
+    const Rn_y  = Mu_nmm_y / (phim * Beffy * d * d);
+    const arg_y = 1 - 2 * Rn_y / (0.85 * fck);
+    const rho_y = (arg_y > 0)
+      ? (0.85 * fck / fys) * (1 - Math.sqrt(arg_y))
+      : 0;
+    const As_reqy = rho_y * Beffy * d;
+    const n_y = nBars(As_reqy, As_mainBar);
+
+    /* --- J/c (극관성모멘트/중심거리) mm³ --- */
+    // 내부 사각기둥 기준 공식 (원형도 동일 적용)
+    const Jcx_mm3 = (bx * d * (by + 3*bx) + Math.pow(d, 3)) / 3;
+    const Jcy_mm3 = (by * d * (bx + 3*by) + Math.pow(d, 3)) / 3;
+    const Jcx_cm3 = Jcx_mm3 / 1000;
+    const Jcy_cm3 = Jcy_mm3 / 1000;
+
+    /* --- punching shear stress --- */
+    const vu = Pu*1000/Ac
+             + gvx * Mux*1e6 / Jcy_mm3
+             + gvy * Muy*1e6 / Jcx_mm3;
+
+    const isOK = vu <= PhiVc_stress;
+
+    /* --- 0.4ΦVc --- */
+    const phi04Vc = 0.4 * phi * Vc / 1000;  // kN
+
+    /* --- Ac in cm², Jc in cm³ --- */
+    const Ac_cm2 = Ac / 100;
+
+    /* --- location display --- */
+    const locLabel = {interior:'내부 (Interior)', edge:'단부 (Edge)', corner:'모서리 (Corner)'};
+
+    /* ============================================================
+       BUILD HTML OUTPUT
+    ============================================================ */
+    const colDesc = colShape === 'circle'
+      ? `원형기둥  φ${fi(Dc)} mm`
+      : `사각기둥  ${fi(Cx)} × ${fi(Cy)} mm`;
+
+    const govEq = Vc === Vc1 ? 'Vc1' : Vc === Vc2 ? 'Vc2' : 'Vc3';
+
+    /* helper: line with right-aligned value */
+    function line(label, eq, valStr, unit='') {
+      const TOTAL = 72;
+      const labelPart = '    ' + label;
+      const right     = valStr + (unit ? ' ' + unit : '');
+      const sep       = '=';
+      const spacer    = ' '.repeat(Math.max(2, TOTAL - labelPart.length - right.length - eq.length - 3));
+      return `${dim(labelPart + '  ')}${dim(eq + spacer)}${val(right)}\n`;
+    }
+
+    let html = '';
+
+    /* ── badge strip ── */
+    html += `<div class="result-badge-strip">`;
+    html += `<span class="rbadge rbadge-info">${esc(name)}</span>`;
+    html += `<span class="rbadge rbadge-info">${esc(locLabel[location])}</span>`;
+    html += `<span class="rbadge rbadge-info">KDS 14.20:2021</span>`;
+    html += isOK
+      ? `<span class="rbadge rbadge-ok">O.K. — 펀칭 전단 안전</span>`
+      : `<span class="rbadge rbadge-ng">N.G. — 단면 보강 필요</span>`;
+    html += `</div>`;
+
+    /* ── 1. Design Conditions ── */
+    html += `<div class="sec-heading">Design Conditions</div>`;
+    html += `<div class="mono-block">`;
+    html += `${dim('    Design Code  :  ')}${val('KDS 14.20:2021 / ACI318-25')}\n`;
+    html += `\n`;
+    html += `${dim('    Material Data')}\n`;
+    html += `${dim('      f_ck  =  ')}${val(f1(fck))} ${dim('N/mm²')}\n`;
+    html += `${dim('      f_ys  =  ')}${val(f1(fys))} ${dim('N/mm²')}\n`;
+    html += `\n`;
+    html += `${dim('    Dimension')}\n`;
+    html += `${dim('      Thk.  :  ')}${val(fi(Thk))} ${dim('mm')}  ${dim('(c_c = ')}${val(fi(Cc))} ${dim('mm)')}\n`;
+    if (colShape === 'circle') {
+      html += `${dim('      Col.  :  ')}${val('원형기둥  φ' + fi(Dc))} ${dim('mm')}\n`;
+    } else {
+      html += `${dim('      Col.  :  ')}${val(fi(Cx) + ' × ' + fi(Cy))} ${dim('mm')}\n`;
+    }
+    html += `\n`;
+    html += `${dim('    Shear Reinforcing Bar')}\n`;
+    html += `${dim('      X-Direction  :  ')}${val(rbxRow + 'Row - ' + rbxBar)}\n`;
+    html += `${dim('      Y-Direction  :  ')}${val(rbyRow + 'Row - ' + rbyBar)}\n`;
+    html += `\n`;
+    html += `${dim('    Applied Loads')}\n`;
+    html += `${dim('      P_u   =  ')}${val(f1(Pu))} ${dim('kN')}\n`;
+    html += `${dim('      M_ux  =  ')}${val(f1(Mux))}${dim(',    M_uy  =  ')}${val(f1(Muy))} ${dim('kN·m')}\n`;
+    html += `</div>`;
+
+    /* ── 2. Check Punching Shear ── */
+    html += `<div class="sec-heading">Check Punching Shear</div>`;
+    html += `<div class="mono-block">`;
+    if (colShape === 'circle') {
+      html += `${dim('    b_o   =  π×(Dc+d)  =  ')}${val(fi(Math.round(bo)))} ${dim('mm')}\n`;
+    } else {
+      html += `${dim('    b_x   =  ')}${val(fi(bx))} ${dim('mm')}${dim(',    b_y   =  ')}${val(fi(by))} ${dim('mm')}\n`;
+      html += `${dim('    b_o   =  ')}${val(fi(Math.round(bo)))} ${dim('mm')}${dim(',   A_c   =  ')}${val(f1(Ac_cm2))} ${dim('cm²')}\n`;
+    }
+    html += `${dim('    d     =  Thk - Cc - db  =  ')}${val(fi(d))} ${dim('mm')}\n`;
+    html += `${dim('    β_c   =  ')}${val(f4(betaC))}\n`;
+    html += `\n`;
+
+    /* Vc1 */
+    const Vc1_kN = Vc1/1000;
+    html += `${dim('    V_c1  =  0.33·λ·√f_ck·b_o·d')}\n`;
+    html += `${dim('          =  0.33 × ')}${val(f2(lambda))}${dim(' × ')}${val(f3(sqFck))}${dim(' × ')}${val(fi(Math.round(bo)))}${dim(' × ')}${val(fi(d))}${dim(' / 1000')}\n`;
+    html += `          =  ${acc(f1(Vc1_kN))} ${dim('kN')}\n`;
+    html += `\n`;
+
+    /* Vc2 */
+    const Vc2_kN = Vc2/1000;
+    const coeff2 = (0.17 + 0.33/betaC);
+    html += `${dim('    V_c2  =  (0.17 + 0.33/β_c)·λ·√f_ck·b_o·d')}\n`;
+    html += `${dim('          =  (')}${val(f4(coeff2))}${dim(') × ')}${val(f2(lambda))}${dim(' × ')}${val(f3(sqFck))}${dim(' × ')}${val(fi(Math.round(bo)))}${dim(' × ')}${val(fi(d))}${dim(' / 1000')}\n`;
+    html += `          =  ${acc(f1(Vc2_kN))} ${dim('kN')}\n`;
+    html += `\n`;
+
+    /* Vc3 */
+    const Vc3_kN = Vc3/1000;
+    const coeff3 = (0.17 + 0.083 * alphaS * d / bo);
+    html += `${dim('    V_c3  =  (0.17 + 0.083·αs·d/b_o)·λ·√f_ck·b_o·d')}\n`;
+    html += `${dim('          =  (')}${val(f4(coeff3))}${dim(') × ')}${val(f2(lambda))}${dim(' × ')}${val(f3(sqFck))}${dim(' × ')}${val(fi(Math.round(bo)))}${dim(' × ')}${val(fi(d))}${dim(' / 1000')}\n`;
+    html += `          =  ${acc(f1(Vc3_kN))} ${dim('kN')}\n`;
+    html += `\n`;
+
+    html += `${dim('    V_c   =  Min[V_c1, V_c2, V_c3]  =  ')}${acc(f1(Vc/1000))} ${dim('kN')}  ${dim('← ')}${val(govEq + ' 지배')}\n`;
+    html += `\n`;
+    html += `${dim('    ΦV_c  =  φ × V_c / A_c')}\n`;
+    html += `${dim('          =  ')}${val(f2(phi))}${dim(' × ')}${val(f1(Vc/1000))}${dim(' kN / (')}${val(f1(Ac_cm2))}${dim(' cm² × 0.1)')}\n`;
+    html += `          =  ${acc(f3(PhiVc_stress))} ${dim('N/mm²')}  ${dim('[')}${val(f1(PhiVc_kN))} ${dim('kN]')}\n`;
+    html += `</div>`;
+
+    /* ── 3. X-X Unbalanced Moment ── */
+    html += `<div class="sec-heading">X-X Axis — Unbalanced Moment Factor</div>`;
+    html += `<div class="mono-block">`;
+    html += `${dim('    0.4·ΦV_c  =  ')}${val(f1(phi04Vc))} ${dim('kN')}  ${dim('(P_u 참고)')}\n`;
+    html += `\n`;
+    if (gammaDirect) {
+      html += `${dim('    γ_fx  =  ')}${val(f4(gfx))}  ${dim('(사용자 입력)')}\n`;
+    } else {
+      html += `${dim('    γ_fx  =  1 / (1 + (2/3)·√(b_y/b_x))')}\n`;
+      html += `${dim('          =  1 / (1 + 0.667 × ')}${val(f4(Math.sqrt(by/bx)))}${dim(')')}\n`;
+      html += `          =  ${acc(f4(gfx))}\n`;
+    }
+    html += `\n`;
+    html += `${dim('    B_effx  =  C_x + 3·Thk  =  ')}${val(fi(Beffx))} ${dim('mm')}\n`;
+    html += `    M_uex  =  γ_fx × M_ux  =  ${acc(f1(gfx))} ${dim('× ')}${val(f1(Mux))} ${dim('=')}  ${acc(f1(Muex))} ${dim('kN·m')}\n`;
+    html += `\n`;
+    html += `${dim('    Flexural Reinforcement Required (X-Direction)')}\n`;
+    html += `${dim('      Rn    =  M_uex / (φm × B_effx × d²)')}\n`;
+    html += `${dim('            =  ')}${val(f3(Mu_nmm_x/1e6))}${dim(' kN·m × 10⁶ / (')}${val(f2(phim))}${dim(' × ')}${val(fi(Beffx))}${dim(' × ')}${val(fi(d))}${dim('²)')}\n`;
+    html += `            =  ${acc(f4(Rn_x))} ${dim('N/mm²')}\n`;
+    html += `\n`;
+    html += `${dim('      ρ     =  0.85·f_ck/f_ys × (1 - √(1 - 2Rn/(0.85·f_ck)))')}\n`;
+    html += `            =  ${acc(f6(rho_x))}\n`;
+    html += `\n`;
+    html += `${dim('      A_s,req  =  ρ × B_effx × d')}\n`;
+    html += `               =  ${acc(fi(Math.round(As_reqx)))} ${dim('mm²')}  ${dim('→  ')}${val(n_x + ' - ' + mainBar)}  ${dim('(')}${val(fi(Math.round(n_x * As_mainBar)))} ${dim('mm²)')}\n`;
+    html += `</div>`;
+
+    /* ── 4. Y-Y Unbalanced Moment ── */
+    html += `<div class="sec-heading">Y-Y Axis — Unbalanced Moment Factor</div>`;
+    html += `<div class="mono-block">`;
+    if (gammaDirect) {
+      html += `${dim('    γ_fy  =  ')}${val(f4(gfy))}  ${dim('(사용자 입력)')}\n`;
+    } else {
+      html += `${dim('    γ_fy  =  1 / (1 + (2/3)·√(b_x/b_y))')}\n`;
+      html += `${dim('          =  1 / (1 + 0.667 × ')}${val(f4(Math.sqrt(bx/by)))}${dim(')')}\n`;
+      html += `          =  ${acc(f4(gfy))}\n`;
+    }
+    html += `\n`;
+    html += `${dim('    B_effy  =  C_y + 3·Thk  =  ')}${val(fi(Beffy))} ${dim('mm')}\n`;
+    html += `    M_uey  =  γ_fy × M_uy  =  ${acc(f1(gfy))} ${dim('× ')}${val(f1(Muy))} ${dim('=')}  ${acc(f1(Muey))} ${dim('kN·m')}\n`;
+    html += `\n`;
+    html += `${dim('    Flexural Reinforcement Required (Y-Direction)')}\n`;
+    html += `${dim('      Rn    =  M_uey / (φm × B_effy × d²)')}\n`;
+    html += `${dim('            =  ')}${val(f3(Mu_nmm_y/1e6))}${dim(' kN·m × 10⁶ / (')}${val(f2(phim))}${dim(' × ')}${val(fi(Beffy))}${dim(' × ')}${val(fi(d))}${dim('²)')}\n`;
+    html += `            =  ${acc(f4(Rn_y))} ${dim('N/mm²')}\n`;
+    html += `\n`;
+    html += `${dim('      ρ     =  0.85·f_ck/f_ys × (1 - √(1 - 2Rn/(0.85·f_ck)))')}\n`;
+    html += `            =  ${acc(f6(rho_y))}\n`;
+    html += `\n`;
+    html += `${dim('      A_s,req  =  ρ × B_effy × d')}\n`;
+    html += `               =  ${acc(fi(Math.round(As_reqy)))} ${dim('mm²')}  ${dim('→  ')}${val(n_y + ' - ' + mainBar)}  ${dim('(')}${val(fi(Math.round(n_y * As_mainBar)))} ${dim('mm²)')}\n`;
+    html += `</div>`;
+
+    /* ── 5. Punching Shear Stress Check ── */
+    html += `<div class="sec-heading">Check Punching Shear Stress</div>`;
+    html += `<div class="mono-block">`;
+    html += `${dim('    ΦV_c  =  ')}${val(f3(PhiVc_stress))} ${dim('N/mm²')}\n`;
+    html += `${dim('    γ_vx  =  1 - γ_fx  =  ')}${val(f4(gvx))}\n`;
+    html += `${dim('    γ_vy  =  1 - γ_fy  =  ')}${val(f4(gvy))}\n`;
+    html += `\n`;
+    html += `${dim('    J/c_x  =  ')}${val(fi(Math.round(Jcx_cm3)))} ${dim('cm³')}\n`;
+    html += `${dim('    J/c_y  =  ')}${val(fi(Math.round(Jcy_cm3)))} ${dim('cm³')}\n`;
+    html += `\n`;
+    html += `${dim('    v_u  =  P_u/A_c + γ_vx·M_ux/(J/c_y) + γ_vy·M_uy/(J/c_x)')}\n`;
+    html += `\n`;
+    html += `${dim('         =  ')}${val(f1(Pu))}${dim(' kN×10³/')}${val(fi(Math.round(Ac)))}${dim(' + ')}\n`;
+    html += `${dim('              ')}${val(f4(gvx))}${dim('×')}${val(f1(Mux))}${dim('×10⁶/')}${val(fi(Math.round(Jcy_mm3)))}${dim(' + ')}\n`;
+    html += `${dim('              ')}${val(f4(gvy))}${dim('×')}${val(f1(Muy))}${dim('×10⁶/')}${val(fi(Math.round(Jcx_mm3)))}\n`;
+    html += `\n`;
+
+    const vu_part1 = Pu*1000/Ac;
+    const vu_part2 = gvx * Mux*1e6 / Jcy_mm3;
+    const vu_part3 = gvy * Muy*1e6 / Jcx_mm3;
+    html += `${dim('         =  ')}${val(f4(vu_part1))}${dim(' + ')}${val(f4(vu_part2))}${dim(' + ')}${val(f4(vu_part3))}\n`;
+    html += `\n`;
+    html += `    v_u  =  ${acc(f3(vu))} ${dim('N/mm²')}\n`;
+    html += `</div>`;
+
+    /* ── verdict banner ── */
+    const cmpSign = isOK ? '≤' : '>';
+    html += `<div class="verdict-banner ${isOK ? 'ok' : 'ng'}">
+      <div>
+        <div class="verdict-label">Punching Shear Check</div>
+        <div class="verdict-value">${isOK ? ok_s('O.K.') : ng_s('N.G.')}</div>
+      </div>
+      <div class="verdict-eq">v_u  ${cmpSign}  ΦV_c<br>${f3(vu)} N/mm²  ${cmpSign}  ${f3(PhiVc_stress)} N/mm²</div>
+    </div>`;
+
+    /* ── render ── */
+    g('resultPlaceholder').style.display = 'none';
+    g('calcSheet').innerHTML = html;
+    g('detailSheet').innerHTML = buildDetailHTML({
+      d, bx, by, bo, Ac, Ac_cm2,
+      fck, fys, Thk, Cc, db_main, mainBar,
+      Cx, Cy, colShape, Dc,
+      betaC, alphaS, lambda, phi, phim, sqFck,
+      Vc1, Vc2, Vc3, Vc, govEq, PhiVc_kN, PhiVc_stress,
+      gfx, gfy, gvx, gvy, gammaDirect,
+      Beffx, Beffy, Muex, Muey,
+      Rn_x, rho_x, As_reqx, n_x,
+      Rn_y, rho_y, As_reqy, n_y, As_mainBar,
+      Jcx_mm3, Jcy_mm3, Jcx_cm3, Jcy_cm3,
+      Pu, Mux, Muy,
+      vu, vu_part1, vu_part2, vu_part3,
+      PhiVc_stress, isOK, phi04Vc,
+    });
+    g('resultTabs').style.display = 'block';
+    switchTab('sheet');
+  }
+
+  /* ── 상세 수식 HTML 빌더 ─────────────────────── */
+  function buildDetailHTML(v) {
+    function sec(title) {
+      return `<div class="df-section"><div class="df-title">${title}</div><div class="df-row">`;
+    }
+    function endsec() { return `</div></div>`; }
+    function row(formula, substituted) {
+      return `<div class="df-formula">${formula}</div><div class="df-substituted">= ${substituted}</div>`;
+    }
+    function result(label, valueStr, unit, cls='') {
+      return `<div class="df-result ${cls}"><span style="color:rgba(255,255,255,0.4)">${label} = </span><span class="r-val">${valueStr}</span> <span style="color:rgba(255,255,255,0.35)">${unit}</span></div>`;
+    }
+    function govMark(name) {
+      return name === v.govEq ? ` <span class="r-gov">← 지배</span>` : '';
+    }
+
+    let h = '';
+
+    /* 1. 유효 깊이 */
+    h += sec('① 유효 깊이 (Effective Depth)');
+    h += row('d = Thk − Cc − db_main',
+             `${v.Thk} − ${v.Cc} − ${v.db_main} <span style="color:rgba(255,255,255,0.35)">(${v.mainBar})</span>`);
+    h += endsec();
+    h += result('d', v.d.toFixed(0), 'mm');
+
+    /* 2. 임계단면 */
+    h += sec('② 임계단면 (Critical Section at d/2 from column face)');
+    if (v.colShape === 'circle') {
+      h += row('bx = by = Dc + d', `${v.Dc} + ${v.d} `);
+      h += row('bo = π × (Dc + d)', `π × ${v.Dc + v.d}`);
+    } else {
+      h += row('bx = Cx + d', `${v.Cx} + ${v.d}`);
+      h += row('by = Cy + d', `${v.Cy} + ${v.d}`);
+      h += row('bo = 2 × (bx + by)', `2 × (${v.bx} + ${v.by})`);
+    }
+    h += row('Ac = bo × d', `${v.bo.toFixed(0)} × ${v.d}`);
+    h += endsec();
+    h += result('bx', v.bx.toFixed(0), 'mm');
+    h += result('by', v.by.toFixed(0), 'mm');
+    h += result('bo', v.bo.toFixed(0), 'mm');
+    h += result('Ac', v.Ac_cm2.toFixed(0), 'cm²');
+
+    /* 3. 전단강도 */
+    h += sec('③ 콘크리트 펀칭 전단강도 (Vc)');
+    h += row('βc = max(Cx,Cy) / min(Cx,Cy)', `${Math.max(v.Cx,v.Cy)} / ${Math.min(v.Cx,v.Cy)}`);
+    h += row('αs = 40 (내부) / 30 (단부) / 20 (모서리)', `${v.alphaS}`);
+    h += row('√f_ck', `√${v.fck}`);
+    h += row('Vc1 = 0.33λ√f_ck × bo × d',
+             `0.33 × ${v.lambda} × ${v.sqFck.toFixed(3)} × ${v.bo.toFixed(0)} × ${v.d}`);
+    h += row('Vc2 = (0.17 + 0.33/βc)λ√f_ck × bo × d',
+             `(0.17 + 0.33/${v.betaC.toFixed(2)}) × ${v.sqFck.toFixed(3)} × ${v.bo.toFixed(0)} × ${v.d}`);
+    h += row('Vc3 = (0.17 + 0.083αs·d/bo)λ√f_ck × bo × d',
+             `(0.17 + 0.083 × ${v.alphaS} × ${v.d}/${v.bo.toFixed(0)}) × ${v.sqFck.toFixed(3)} × ${v.bo.toFixed(0)} × ${v.d}`);
+    h += row('Vc = min(Vc1, Vc2, Vc3)', `min(${(v.Vc1/1000).toFixed(1)}, ${(v.Vc2/1000).toFixed(1)}, ${(v.Vc3/1000).toFixed(1)})`);
+    h += row('ΦVc(stress) = φ × Vc / Ac', `${v.phi} × ${(v.Vc/1000).toFixed(1)}×10³ / ${v.Ac.toFixed(0)}`);
+    h += endsec();
+    h += result('√f_ck', v.sqFck.toFixed(3), '');
+    h += result('Vc1', (v.Vc1/1000).toFixed(1), 'kN') ;
+    h += result('Vc2', (v.Vc2/1000).toFixed(1), 'kN');
+    h += result('Vc3', (v.Vc3/1000).toFixed(1), 'kN');
+    h += `<div class="df-result"><span style="color:rgba(255,255,255,0.4)">Vc (지배) = </span><span class="r-val">${(v.Vc/1000).toFixed(1)}</span> <span style="color:rgba(255,255,255,0.35)">kN</span> <span class="r-gov">[${v.govEq} 지배]</span></div>`;
+    h += result('ΦVc', v.PhiVc_stress.toFixed(3), 'N/mm²');
+
+    /* 4. 휨 전달계수 */
+    h += sec('④ 불균형 모멘트 휨 전달계수 (γf)');
+    if (v.gammaDirect) {
+      h += row('γfx (사용자 입력)', `${v.gfx.toFixed(4)}`);
+      h += row('γfy (사용자 입력)', `${v.gfy.toFixed(4)}`);
+    } else {
+      h += row('γfx = 1 / (1 + (2/3)·√(by/bx))',
+               `1 / (1 + 0.667 × √(${v.by}/${v.bx}))`);
+      h += row('γfy = 1 / (1 + (2/3)·√(bx/by))',
+               `1 / (1 + 0.667 × √(${v.bx}/${v.by}))`);
+    }
+    h += row('γvx = 1 − γfx', `1 − ${v.gfx.toFixed(4)}`);
+    h += row('γvy = 1 − γfy', `1 − ${v.gfy.toFixed(4)}`);
+    h += endsec();
+    h += result('γfx', v.gfx.toFixed(4), '');
+    h += result('γfy', v.gfy.toFixed(4), '');
+    h += result('γvx', v.gvx.toFixed(4), '');
+    h += result('γvy', v.gvy.toFixed(4), '');
+
+    /* 5. 유효폭 & 소요철근 */
+    h += sec('⑤ 유효폭 및 소요 휨 철근 (Beff, As,req)');
+    h += row('Beffx = Cx + 3·Thk', `${v.Cx} + 3 × ${v.Thk}`);
+    h += row('Muex = γfx × Mux', `${v.gfx.toFixed(4)} × ${v.Mux}`);
+    h += row('Rn_x = Muex / (φm·Beffx·d²)',
+             `${v.Muex.toFixed(1)}×10⁶ / (${v.phim} × ${v.Beffx} × ${v.d}²)`);
+    h += row('ρx = 0.85f_ck/f_ys·(1−√(1−2Rn/0.85f_ck))',
+             `0.85 × ${v.fck}/${v.fys} × (1 − √(1 − 2×${v.Rn_x.toFixed(4)}/(0.85×${v.fck})))`);
+    h += row('As,reqx = ρx · Beffx · d',
+             `${v.rho_x.toFixed(6)} × ${v.Beffx} × ${v.d}`);
+    h += row('Beffy = Cy + 3·Thk', `${v.Cy} + 3 × ${v.Thk}`);
+    h += row('Muey = γfy × Muy', `${v.gfy.toFixed(4)} × ${v.Muy}`);
+    h += row('As,reqy = ρy · Beffy · d',
+             `${v.rho_y.toFixed(6)} × ${v.Beffy} × ${v.d}`);
+    h += endsec();
+    h += result('Beffx', v.Beffx.toFixed(0), 'mm');
+    h += result('Muex', v.Muex.toFixed(1), 'kN·m');
+    h += result('As,reqx', Math.round(v.As_reqx).toLocaleString(), `mm²  →  ${v.n_x} - ${v.mainBar}`);
+    h += result('Beffy', v.Beffy.toFixed(0), 'mm');
+    h += result('Muey', v.Muey.toFixed(1), 'kN·m');
+    h += result('As,reqy', Math.round(v.As_reqy).toLocaleString(), `mm²  →  ${v.n_y} - ${v.mainBar}`);
+
+    /* 6. J/c */
+    h += sec('⑥ 극관성모멘트 / 중심거리 (J/c)');
+    h += row('J/cx = (bx·d·(by+3·bx) + d³) / 3',
+             `(${v.bx}×${v.d}×(${v.by}+3×${v.bx}) + ${v.d}³) / 3`);
+    h += row('J/cy = (by·d·(bx+3·by) + d³) / 3',
+             `(${v.by}×${v.d}×(${v.bx}+3×${v.by}) + ${v.d}³) / 3`);
+    h += endsec();
+    h += result('J/cx', Math.round(v.Jcx_cm3).toLocaleString(), 'cm³');
+    h += result('J/cy', Math.round(v.Jcy_cm3).toLocaleString(), 'cm³');
+
+    /* 7. 전단응력 검토 */
+    h += sec('⑦ 펀칭 전단응력 검토 (vu ≤ ΦVc)');
+    h += row('vu = Pu/Ac + γvx·Mux/(J/cy) + γvy·Muy/(J/cx)', '');
+    h += row('항①  Pu/Ac',
+             `${v.Pu}×10³ / ${Math.round(v.Ac).toLocaleString()}`);
+    h += row('항②  γvx·Mux·10⁶ / J/cy',
+             `${v.gvx.toFixed(4)} × ${v.Mux}×10⁶ / ${Math.round(v.Jcy_mm3).toLocaleString()}`);
+    h += row('항③  γvy·Muy·10⁶ / J/cx',
+             `${v.gvy.toFixed(4)} × ${v.Muy}×10⁶ / ${Math.round(v.Jcx_mm3).toLocaleString()}`);
+    h += row('vu = 항① + 항② + 항③',
+             `${v.vu_part1.toFixed(4)} + ${v.vu_part2.toFixed(4)} + ${v.vu_part3.toFixed(4)}`);
+    h += endsec();
+    h += result('항①', v.vu_part1.toFixed(4), 'N/mm²');
+    h += result('항②', v.vu_part2.toFixed(4), 'N/mm²');
+    h += result('항③', v.vu_part3.toFixed(4), 'N/mm²');
+    const okCls = v.isOK ? 'r-val' : 'r-ng';
+    h += `<div class="df-result"><span style="color:rgba(255,255,255,0.4)">vu = </span><span class="${okCls}">${v.vu.toFixed(3)}</span> <span style="color:rgba(255,255,255,0.35)">N/mm²</span></div>`;
+    h += `<div class="df-result"><span style="color:rgba(255,255,255,0.4)">ΦVc = </span><span class="r-val">${v.PhiVc_stress.toFixed(3)}</span> <span style="color:rgba(255,255,255,0.35)">N/mm²</span></div>`;
+    h += `<div class="df-result" style="font-size:.95rem;margin-top:8px">`;
+    h += v.isOK
+      ? `<span class="r-gov" style="font-size:1rem">✓ vu (${v.vu.toFixed(3)}) ≤ ΦVc (${v.PhiVc_stress.toFixed(3)})  →  O.K.</span>`
+      : `<span class="r-ng"  style="font-size:1rem">✗ vu (${v.vu.toFixed(3)}) > ΦVc (${v.PhiVc_stress.toFixed(3)})  →  N.G.</span>`;
+    h += `</div>`;
+
+    return h;
+  }
+
+  /* small helper for 6 decimal places */
+  function f6(v) { return v.toFixed(6); }
+
+  /* init */
+  onColShapeChange();
+  onGammaCheckChange();
+</script>
+</body>
+</html>
