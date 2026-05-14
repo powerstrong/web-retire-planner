@@ -1,0 +1,872 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>은퇴 자금 설계 계산기</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #111111;
+      --border:  rgba(255,255,255,0.15);
+      --border2: rgba(255,255,255,0.4);
+      --text:    #ffffff;
+      --muted:   rgba(255,255,255,0.45);
+      --success: #4ade80;
+      --info:    #60a5fa;
+      --warning: #fb923c;
+      --danger:  #f87171;
+      --radius:  2px;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── TOP NAV ─────────────────────────────── */
+    .topnav {
+      position: absolute;
+      top: 0; left: 0;
+      padding: 22px 32px;
+      z-index: 10;
+    }
+    .topnav-logo {
+      font-size: .78rem;
+      font-weight: 400;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+    }
+    .hero { position: relative; }
+
+    /* ── HERO ─────────────────────────────────── */
+    .hero {
+      background:
+        linear-gradient(rgba(0,0,0,0.52), rgba(0,0,0,0.62)),
+        url('https://images.unsplash.com/photo-1486325212027-8081e485255e?w=1600&q=80') center/cover no-repeat;
+      color: white;
+      padding: 100px 24px 72px;
+      text-align: center;
+    }
+    .hero h1 {
+      font-size: clamp(1.9rem, 5vw, 3.6rem);
+      font-weight: 300;
+      letter-spacing: .02em;
+      line-height: 1.25;
+      margin-bottom: 28px;
+      max-width: 860px;
+      margin-left: auto;
+      margin-right: auto;
+    }
+    .hero-divider {
+      width: 300px;
+      height: 1px;
+      background: rgba(255,255,255,0.55);
+      margin: 0 auto 24px;
+    }
+    .hero p {
+      font-size: .92rem;
+      color: rgba(255,255,255,0.65);
+      margin-bottom: 52px;
+      font-weight: 300;
+      letter-spacing: .01em;
+    }
+    .hero-summary {
+      display: inline-flex;
+      flex-wrap: wrap;
+      justify-content: center;
+    }
+    .hero-stat {
+      border: 1px solid rgba(255,255,255,0.28);
+      padding: 20px 36px;
+      min-width: 210px;
+      margin: -1px 0 0 -1px;
+    }
+    .hero-stat .label {
+      font-size: .68rem;
+      color: rgba(255,255,255,0.5);
+      margin-bottom: 7px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+    .hero-stat .value { font-size: 1.2rem; font-weight: 300; }
+
+    /* ── MAIN LAYOUT ──────────────────────────── */
+    .main-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 48px 0 80px;
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      align-items: start;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+    }
+
+    /* ── CARD BASE ────────────────────────────── */
+    .card { overflow: hidden; }
+    .card-header {
+      padding: 13px 22px;
+      font-size: .68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      border-bottom: 1px solid var(--border);
+      color: var(--muted);
+    }
+    .card-body { padding: 24px 22px; }
+
+    /* ── INPUT PANEL ──────────────────────────── */
+    .input-panel {
+      border-right: 1px solid var(--border);
+    }
+    .form-group { margin-bottom: 16px; }
+    .form-label {
+      display: block;
+      font-size: .68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .1em;
+      color: var(--muted);
+      margin-bottom: 7px;
+    }
+    .input-wrap {
+      position: relative;
+      display: flex;
+      align-items: center;
+    }
+    .input-wrap input {
+      width: 100%;
+      padding: 9px 46px 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      font-size: .88rem;
+      color: var(--text);
+      background: rgba(255,255,255,0.03);
+      transition: border-color .2s, background .2s;
+      outline: none;
+      font-family: inherit;
+    }
+    .input-wrap input:focus {
+      border-color: var(--border2);
+      background: rgba(255,255,255,0.06);
+    }
+    .input-wrap input.error { border-color: var(--danger); }
+    .input-unit {
+      position: absolute;
+      right: 12px;
+      font-size: .72rem;
+      color: var(--muted);
+      pointer-events: none;
+    }
+    .error-msg {
+      display: none;
+      font-size: .72rem;
+      color: var(--danger);
+      margin-top: 4px;
+    }
+    .error-msg.show { display: block; }
+    .form-section-title {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: rgba(255,255,255,0.28);
+      margin: 28px 0 14px;
+      padding-bottom: 9px;
+      border-bottom: 1px solid var(--border);
+    }
+    .form-section-title:first-child { margin-top: 0; }
+
+    /* ── RESULT COLUMN ────────────────────────── */
+    .result-col { display: flex; flex-direction: column; }
+
+    /* ── RESULT CARDS GRID ────────────────────── */
+    .result-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+    }
+    .result-card {
+      padding: 22px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transition: background .18s;
+    }
+    .result-card:hover { background: rgba(255,255,255,0.03); }
+    .result-card:nth-child(even) { border-right: none; }
+    .result-card.full {
+      grid-column: 1 / -1;
+      border-right: none;
+    }
+    .result-card .rc-label {
+      font-size: .65rem;
+      color: var(--muted);
+      margin-bottom: 9px;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+    }
+    .result-card .rc-value {
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: var(--text);
+    }
+    .result-card .rc-sub {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.3);
+      margin-top: 4px;
+    }
+    .result-card.accent-gap .rc-value   { color: var(--warning); }
+    .result-card.accent-saving .rc-value { color: var(--text); }
+
+    /* ── STATUS BADGE ─────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid;
+      border-radius: var(--radius);
+      font-size: .68rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+      margin-top: 10px;
+    }
+    .status-충분 { border-color: var(--success); color: var(--success); }
+    .status-양호 { border-color: var(--info);    color: var(--info); }
+    .status-주의 { border-color: var(--warning);  color: var(--warning); }
+    .status-위험 { border-color: var(--danger);   color: var(--danger); }
+
+    /* ── CHARTS ───────────────────────────────── */
+    .charts-section { border-top: 1px solid var(--border); }
+    .charts-grid { display: grid; grid-template-columns: 1fr 1fr; }
+    .chart-card { border-right: 1px solid var(--border); }
+    .chart-card:last-child { border-right: none; }
+    .chart-label {
+      padding: 12px 16px 0;
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+    }
+    .chart-wrap { padding: 8px 16px 16px; position: relative; height: 220px; }
+
+    /* ── TIPS ─────────────────────────────────── */
+    .tips-section { border-top: 1px solid var(--border); }
+    .tips-list { display: flex; flex-direction: column; }
+    .tip-item {
+      display: flex;
+      gap: 14px;
+      padding: 15px 0;
+      border-bottom: 1px solid var(--border);
+      font-size: .83rem;
+      color: rgba(255,255,255,0.6);
+      line-height: 1.65;
+    }
+    .tip-item:last-child { border-bottom: none; }
+    .tip-icon { font-size: .95rem; flex-shrink: 0; margin-top: 3px; opacity: .65; }
+
+    /* ── USD LABEL ───────────────────────────── */
+    .usd-label { color: var(--info); }
+
+    /* ── DETAIL BUTTON ───────────────────────── */
+    .detail-btn-wrap {
+      padding: 20px 22px;
+      border-top: 1px solid var(--border);
+    }
+    .btn-detail {
+      display: block;
+      width: 100%;
+      padding: 13px 24px;
+      background: transparent;
+      border: 1px solid rgba(255,255,255,0.55);
+      color: #ffffff;
+      font-family: inherit;
+      font-size: .72rem;
+      font-weight: 400;
+      letter-spacing: .2em;
+      text-transform: uppercase;
+      text-align: center;
+      cursor: pointer;
+      transition: background .2s, border-color .2s;
+    }
+    .btn-detail:hover {
+      background: rgba(255,255,255,0.06);
+      border-color: rgba(255,255,255,0.85);
+    }
+
+    /* ── DISCLAIMER ───────────────────────────── */
+    .disclaimer {
+      max-width: 1280px;
+      margin: 0 auto 56px;
+      border-left: 1px solid var(--border);
+      border-right: 1px solid var(--border);
+      padding: 0 22px;
+    }
+    .disclaimer p {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.25);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+      letter-spacing: .01em;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────── */
+    @media (max-width: 900px) {
+      .main-wrap {
+        grid-template-columns: 1fr;
+        border: none;
+        padding: 32px 0 60px;
+      }
+      .input-panel { border-right: none; border-bottom: 1px solid var(--border); }
+      .result-col { border-top: none; }
+      .disclaimer { border: none; }
+    }
+    @media (max-width: 600px) {
+      .hero { padding: 64px 16px 48px; }
+      .hero-stat { min-width: 150px; padding: 14px 20px; }
+      .hero-divider { width: 180px; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-card { border-right: none; border-bottom: 1px solid var(--border); }
+      .chart-card:last-child { border-bottom: none; }
+      .result-card:nth-child(even) { border-right: none; }
+    }
+    @media (max-width: 390px) {
+      .result-grid { grid-template-columns: 1fr; }
+      .result-card { border-right: none; }
+      .result-card.full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <span class="topnav-logo">라임구조엔지니어링</span>
+</nav>
+
+<!-- HERO -->
+<section class="hero">
+  <h1>내가 원하는 은퇴 생활비,<br>지금부터 얼마를 준비해야 할까요?</h1>
+  <div class="hero-divider"></div>
+  <p>아래 조건을 입력하면 필요 은퇴자금과 월 저축액을 바로 계산해 드립니다.</p>
+  <div class="hero-summary">
+    <div class="hero-stat">
+      <div class="label">예상 필요 은퇴자금</div>
+      <div class="value" id="heroRequired">—</div>
+    </div>
+    <div class="hero-stat">
+      <div class="label">추천 월 저축액</div>
+      <div class="value" id="heroSaving">—</div>
+    </div>
+  </div>
+</section>
+
+<!-- MAIN -->
+<div class="main-wrap">
+
+  <!-- LEFT: INPUT FORM -->
+  <div class="input-panel">
+    <div class="card-header">입력 조건</div>
+    <div class="card-body">
+
+      <div class="form-section-title">은퇴 목표</div>
+
+      <div class="form-group">
+        <label class="form-label" for="desiredMonthlyIncome">은퇴 후 희망 월 수령액</label>
+        <div class="input-wrap">
+          <input type="number" id="desiredMonthlyIncome" value="300" min="0" oninput="onInputChange()" />
+          <span class="input-unit">만원</span>
+        </div>
+        <div class="error-msg" id="err-desiredMonthlyIncome">0 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="savingYears">은퇴까지 준비 기간</label>
+        <div class="input-wrap">
+          <input type="number" id="savingYears" value="20" min="1" oninput="onInputChange()" />
+          <span class="input-unit">년</span>
+        </div>
+        <div class="error-msg" id="err-savingYears">1 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="retirementYears">은퇴 후 수령 기간</label>
+        <div class="input-wrap">
+          <input type="number" id="retirementYears" value="25" min="1" oninput="onInputChange()" />
+          <span class="input-unit">년</span>
+        </div>
+        <div class="error-msg" id="err-retirementYears">1 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-section-title">현재 자산</div>
+
+      <div class="form-group">
+        <label class="form-label" for="currentAssets">현재 보유 은퇴자금</label>
+        <div class="input-wrap">
+          <input type="number" id="currentAssets" value="5000" min="0" oninput="onInputChange()" />
+          <span class="input-unit">만원</span>
+        </div>
+        <div class="error-msg" id="err-currentAssets">0 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-section-title">환율</div>
+
+      <div class="form-group">
+        <label class="form-label" for="exchangeRate">달러 환율</label>
+        <div class="input-wrap">
+          <input type="number" id="exchangeRate" value="1350" min="1" step="1" oninput="onInputChange()" />
+          <span class="input-unit">원/$</span>
+        </div>
+        <div class="error-msg" id="err-exchangeRate">1 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-section-title">수익률 / 물가</div>
+
+      <div class="form-group">
+        <label class="form-label" for="annualSavingReturnRate">준비 기간 연 수익률</label>
+        <div class="input-wrap">
+          <input type="number" id="annualSavingReturnRate" value="5" min="0" step="0.1" oninput="onInputChange()" />
+          <span class="input-unit">%</span>
+        </div>
+        <div class="error-msg" id="err-annualSavingReturnRate">0 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="annualRetirementReturnRate">은퇴 후 운용 수익률</label>
+        <div class="input-wrap">
+          <input type="number" id="annualRetirementReturnRate" value="3" min="0" step="0.1" oninput="onInputChange()" />
+          <span class="input-unit">%</span>
+        </div>
+        <div class="error-msg" id="err-annualRetirementReturnRate">0 이상의 값을 입력해 주세요.</div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="annualInflationRate">물가상승률</label>
+        <div class="input-wrap">
+          <input type="number" id="annualInflationRate" value="2" min="0" step="0.1" oninput="onInputChange()" />
+          <span class="input-unit">%</span>
+        </div>
+        <div class="error-msg" id="err-annualInflationRate">0 이상의 값을 입력해 주세요.</div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- RIGHT: RESULTS -->
+  <div class="result-col">
+
+    <!-- Result Cards -->
+    <div class="card">
+      <div class="card-header">계산 결과</div>
+      <div class="result-grid">
+
+        <div class="result-card">
+          <div class="rc-label">은퇴 시점 월 필요금액</div>
+          <div class="rc-value" id="rc-futureMonthly">—</div>
+          <div class="rc-sub">물가상승 반영 · <span id="rc-futureMonthly-usd" class="usd-label">—</span></div>
+        </div>
+
+        <div class="result-card">
+          <div class="rc-label">필요 은퇴자금</div>
+          <div class="rc-value" id="rc-required">—</div>
+          <div class="rc-sub">연금 현재가치 기준 · <span id="rc-required-usd" class="usd-label">—</span></div>
+        </div>
+
+        <div class="result-card">
+          <div class="rc-label">현재 자산의 은퇴 시점 가치</div>
+          <div class="rc-value" id="rc-futureAssets">—</div>
+          <div class="rc-sub">복리 성장 반영 · <span id="rc-futureAssets-usd" class="usd-label">—</span></div>
+        </div>
+
+        <div class="result-card accent-gap">
+          <div class="rc-label">부족 금액</div>
+          <div class="rc-value" id="rc-gap">—</div>
+          <div class="rc-sub">추가 준비 필요액 · <span id="rc-gap-usd" class="usd-label">—</span></div>
+        </div>
+
+        <div class="result-card full accent-saving">
+          <div class="rc-label">월 저축 필요액</div>
+          <div class="rc-value" id="rc-saving">—</div>
+          <div class="rc-sub" id="rc-saving-usd-wrap"></div>
+          <div id="rc-status-wrap"></div>
+        </div>
+
+      </div>
+      <div class="detail-btn-wrap">
+        <button class="btn-detail" onclick="goToDetail()">상세 분석 보기</button>
+      </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="charts-section">
+      <div class="card-header">자산 변화 시뮬레이션</div>
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-label">은퇴 전 자산 성장</div>
+          <div class="chart-wrap"><canvas id="chartGrowth"></canvas></div>
+        </div>
+        <div class="chart-card">
+          <div class="chart-label">은퇴 후 자금 소진</div>
+          <div class="chart-wrap"><canvas id="chartDecline"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tips -->
+    <div class="tips-section" id="tipsCard" style="display:none;">
+      <div class="card-header">맞춤 추천</div>
+      <div class="card-body">
+        <div class="tips-list" id="tipsList"></div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- DISCLAIMER -->
+<div class="disclaimer">
+  <p>본 계산기는 단순 참고용이며 세금, 국민연금, 퇴직연금, 건강보험료, 투자 손실 가능성은 반영하지 않습니다.</p>
+</div>
+
+<script>
+  let chartGrowth = null;
+  let chartDecline = null;
+
+  function fmt(won) {
+    if (Math.abs(won) >= 10000) return (won / 10000).toFixed(1) + '억원';
+    return won.toFixed(1) + '만원';
+  }
+
+  function getVal(id, minVal) {
+    const el = document.getElementById(id);
+    const errEl = document.getElementById('err-' + id);
+    const v = parseFloat(el.value);
+    if (isNaN(v) || v < minVal) {
+      el.classList.add('error');
+      errEl.classList.add('show');
+      return null;
+    }
+    el.classList.remove('error');
+    errEl.classList.remove('show');
+    return v;
+  }
+
+  function makeChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(20,20,20,0.92)',
+          borderColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1,
+          titleColor: 'rgba(255,255,255,0.5)',
+          bodyColor: '#ffffff',
+          callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: 'rgba(255,255,255,0.1)' },
+          ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { dash: [3,3], color: 'transparent' },
+          ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 10 }, callback: v => fmt(v) }
+        }
+      },
+      elements: { point: { radius: 1.5, hoverRadius: 4 } }
+    };
+  }
+
+  function renderGrowthChart(labels, data) {
+    const ctx = document.getElementById('chartGrowth').getContext('2d');
+    if (chartGrowth) chartGrowth.destroy();
+    chartGrowth = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: 'rgba(255,255,255,0.7)',
+          backgroundColor: 'rgba(255,255,255,0.04)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 1.5
+        }]
+      },
+      options: makeChartOptions()
+    });
+  }
+
+  function renderDeclineChart(labels, data) {
+    const ctx = document.getElementById('chartDecline').getContext('2d');
+    if (chartDecline) chartDecline.destroy();
+    chartDecline = new Chart(ctx, {
+      type: 'line',
+      data: {
+        labels,
+        datasets: [{
+          data,
+          borderColor: 'rgba(251,146,60,0.8)',
+          backgroundColor: 'rgba(251,146,60,0.05)',
+          fill: true,
+          tension: 0.35,
+          borderWidth: 1.5
+        }]
+      },
+      options: makeChartOptions()
+    });
+  }
+
+  function onInputChange() {
+    const desiredMonthlyIncome       = getVal('desiredMonthlyIncome', 0);
+    const savingYears                = getVal('savingYears', 1);
+    const retirementYears            = getVal('retirementYears', 1);
+    const currentAssets              = getVal('currentAssets', 0);
+    const annualSavingReturnRate     = getVal('annualSavingReturnRate', 0);
+    const annualRetirementReturnRate = getVal('annualRetirementReturnRate', 0);
+    const annualInflationRate        = getVal('annualInflationRate', 0);
+    const exchangeRate               = getVal('exchangeRate', 1);
+
+    if ([desiredMonthlyIncome, savingYears, retirementYears, currentAssets,
+         annualSavingReturnRate, annualRetirementReturnRate, annualInflationRate,
+         exchangeRate].some(v => v === null)) return;
+
+    const toUSD = manwon => {
+      const usd = manwon * 10000 / exchangeRate;
+      if (usd >= 1000000) return '$' + (usd / 1000000).toFixed(1) + 'M';
+      if (usd >= 1000)    return '$' + (usd / 1000).toFixed(1) + 'K';
+      return '$' + usd.toFixed(0);
+    };
+
+    // 1. 은퇴 시점 월 필요 생활비
+    const futureMonthlyIncome =
+      desiredMonthlyIncome * Math.pow(1 + annualInflationRate / 100, savingYears);
+
+    // 2. 월 수익률
+    const monthlySavingReturnRate =
+      Math.pow(1 + annualSavingReturnRate / 100, 1 / 12) - 1;
+    const monthlyRetirementReturnRate =
+      Math.pow(1 + annualRetirementReturnRate / 100, 1 / 12) - 1;
+
+    // 3. 필요 은퇴자금
+    const retirementMonths = retirementYears * 12;
+    let requiredRetirementAssets;
+    if (monthlyRetirementReturnRate !== 0) {
+      requiredRetirementAssets =
+        futureMonthlyIncome *
+        (1 - Math.pow(1 + monthlyRetirementReturnRate, -retirementMonths)) /
+        monthlyRetirementReturnRate;
+    } else {
+      requiredRetirementAssets = futureMonthlyIncome * retirementMonths;
+    }
+
+    // 4. 현재 자산의 미래 가치
+    const savingMonths = savingYears * 12;
+    const futureValueOfCurrentAssets =
+      currentAssets * Math.pow(1 + monthlySavingReturnRate, savingMonths);
+
+    // 5. 부족 금액
+    const assetGap = Math.max(0, requiredRetirementAssets - futureValueOfCurrentAssets);
+
+    // 6. 월 저축 필요액
+    let requiredMonthlySaving;
+    if (assetGap === 0) {
+      requiredMonthlySaving = 0;
+    } else if (monthlySavingReturnRate !== 0) {
+      requiredMonthlySaving =
+        assetGap * monthlySavingReturnRate /
+        (Math.pow(1 + monthlySavingReturnRate, savingMonths) - 1);
+    } else {
+      requiredMonthlySaving = assetGap / savingMonths;
+    }
+
+    // Update result cards
+    document.getElementById('rc-futureMonthly').textContent     = fmt(futureMonthlyIncome);
+    document.getElementById('rc-futureMonthly-usd').textContent = toUSD(futureMonthlyIncome);
+    document.getElementById('rc-required').textContent          = fmt(requiredRetirementAssets);
+    document.getElementById('rc-required-usd').textContent      = toUSD(requiredRetirementAssets);
+    document.getElementById('rc-futureAssets').textContent      = fmt(futureValueOfCurrentAssets);
+    document.getElementById('rc-futureAssets-usd').textContent  = toUSD(futureValueOfCurrentAssets);
+    document.getElementById('rc-gap').textContent               = fmt(assetGap);
+    document.getElementById('rc-gap-usd').textContent           = toUSD(assetGap);
+    document.getElementById('rc-saving').textContent            = fmt(requiredMonthlySaving);
+    document.getElementById('rc-saving-usd-wrap').textContent   = toUSD(requiredMonthlySaving);
+
+    // Hero
+    document.getElementById('heroRequired').textContent = fmt(requiredRetirementAssets) + '  /  ' + toUSD(requiredRetirementAssets);
+    document.getElementById('heroSaving').textContent   = fmt(requiredMonthlySaving) + '  /  ' + toUSD(requiredMonthlySaving);
+
+    // Status badge
+    let statusLabel, statusClass;
+    if (requiredMonthlySaving === 0) {
+      statusLabel = '충분'; statusClass = 'status-충분';
+    } else if (requiredMonthlySaving <= desiredMonthlyIncome * 0.3) {
+      statusLabel = '양호'; statusClass = 'status-양호';
+    } else if (requiredMonthlySaving <= desiredMonthlyIncome * 0.6) {
+      statusLabel = '주의'; statusClass = 'status-주의';
+    } else {
+      statusLabel = '위험'; statusClass = 'status-위험';
+    }
+    document.getElementById('rc-status-wrap').innerHTML =
+      `<span class="status-badge ${statusClass}">${statusLabel}</span>`;
+
+    // Tips
+    const tips = [];
+    if (requiredMonthlySaving === 0)
+      tips.push({ icon: '—', text: '현재 자산이 충분한 편입니다. 입력한 수익률과 기간 기준으로 추가 월 저축 없이도 목표에 도달할 가능성이 있습니다.' });
+    if (requiredMonthlySaving > desiredMonthlyIncome * 0.6)
+      tips.push({ icon: '—', text: '월 저축 부담이 큰 편입니다. 은퇴 후 월 수령액, 은퇴 시점, 준비 기간을 조정하면 더 현실적인 계획을 만들 수 있습니다.' });
+    if (savingYears < 10)
+      tips.push({ icon: '—', text: '준비 기간이 짧습니다. 투자 수익률만으로 해결하기보다 지출 조정, 추가 소득, 은퇴 시점 조정을 함께 검토하는 것이 좋습니다.' });
+    if (requiredRetirementAssets > 0 && currentAssets / requiredRetirementAssets < 0.2)
+      tips.push({ icon: '—', text: '초기 자산 비중이 낮습니다. 복리 효과를 키우려면 가능한 한 빨리 자동 저축 또는 적립식 투자를 시작하는 것이 유리합니다.' });
+    if (annualSavingReturnRate - annualInflationRate < 2)
+      tips.push({ icon: '—', text: '물가상승률을 감안하면 실질 수익률이 낮을 수 있습니다. 명목 수익률보다 구매력 기준으로 계획을 점검해 보세요.' });
+
+    const tipsCard = document.getElementById('tipsCard');
+    const tipsList = document.getElementById('tipsList');
+    if (tips.length > 0) {
+      tipsCard.style.display = '';
+      tipsList.innerHTML = tips.map(t =>
+        `<div class="tip-item"><span class="tip-icon">${t.icon}</span><span>${t.text}</span></div>`
+      ).join('');
+    } else {
+      tipsCard.style.display = 'none';
+    }
+
+    // Chart 1: 은퇴 전 자산 성장
+    {
+      let asset = currentAssets;
+      const labels = ['현재'];
+      const data   = [asset];
+      for (let m = 1; m <= savingMonths; m++) {
+        asset = asset * (1 + monthlySavingReturnRate) + requiredMonthlySaving;
+        if (m % 12 === 0) {
+          labels.push(m / 12 + '년');
+          data.push(parseFloat(asset.toFixed(1)));
+        }
+      }
+      renderGrowthChart(labels, data);
+    }
+
+    // Chart 2: 은퇴 후 자금 소진
+    {
+      let asset = requiredRetirementAssets;
+      const labels = ['은퇴'];
+      const data   = [parseFloat(asset.toFixed(1))];
+      for (let m = 1; m <= retirementMonths; m++) {
+        asset = asset * (1 + monthlyRetirementReturnRate) - futureMonthlyIncome;
+        asset = Math.max(0, asset);
+        if (m % 12 === 0) {
+          labels.push(m / 12 + '년');
+          data.push(parseFloat(asset.toFixed(1)));
+        }
+      }
+      renderDeclineChart(labels, data);
+    }
+  }
+
+  function goToDetail() {
+    const desiredMonthlyIncome       = getVal('desiredMonthlyIncome', 0);
+    const savingYears                = getVal('savingYears', 1);
+    const retirementYears            = getVal('retirementYears', 1);
+    const currentAssets              = getVal('currentAssets', 0);
+    const annualSavingReturnRate     = getVal('annualSavingReturnRate', 0);
+    const annualRetirementReturnRate = getVal('annualRetirementReturnRate', 0);
+    const annualInflationRate        = getVal('annualInflationRate', 0);
+    const exchangeRate               = getVal('exchangeRate', 1);
+
+    if ([desiredMonthlyIncome, savingYears, retirementYears, currentAssets,
+         annualSavingReturnRate, annualRetirementReturnRate, annualInflationRate,
+         exchangeRate].some(v => v === null)) return;
+
+    const monthlySavingReturnRate =
+      Math.pow(1 + annualSavingReturnRate / 100, 1 / 12) - 1;
+    const monthlyRetirementReturnRate =
+      Math.pow(1 + annualRetirementReturnRate / 100, 1 / 12) - 1;
+
+    const futureMonthlyIncome =
+      desiredMonthlyIncome * Math.pow(1 + annualInflationRate / 100, savingYears);
+
+    const retirementMonths = retirementYears * 12;
+    let requiredRetirementAssets;
+    if (monthlyRetirementReturnRate !== 0) {
+      requiredRetirementAssets =
+        futureMonthlyIncome *
+        (1 - Math.pow(1 + monthlyRetirementReturnRate, -retirementMonths)) /
+        monthlyRetirementReturnRate;
+    } else {
+      requiredRetirementAssets = futureMonthlyIncome * retirementMonths;
+    }
+
+    const savingMonths = savingYears * 12;
+    const futureValueOfCurrentAssets =
+      currentAssets * Math.pow(1 + monthlySavingReturnRate, savingMonths);
+
+    const assetGap = Math.max(0, requiredRetirementAssets - futureValueOfCurrentAssets);
+
+    let requiredMonthlySaving;
+    if (assetGap === 0) {
+      requiredMonthlySaving = 0;
+    } else if (monthlySavingReturnRate !== 0) {
+      requiredMonthlySaving =
+        assetGap * monthlySavingReturnRate /
+        (Math.pow(1 + monthlySavingReturnRate, savingMonths) - 1);
+    } else {
+      requiredMonthlySaving = assetGap / savingMonths;
+    }
+
+    let planStatus;
+    if (requiredMonthlySaving === 0) {
+      planStatus = '충분';
+    } else if (requiredMonthlySaving <= desiredMonthlyIncome * 0.3) {
+      planStatus = '양호';
+    } else if (requiredMonthlySaving <= desiredMonthlyIncome * 0.6) {
+      planStatus = '주의';
+    } else {
+      planStatus = '위험';
+    }
+
+    const data = {
+      inputs: {
+        desiredMonthlyIncome,
+        savingYears,
+        retirementYears,
+        currentAssets,
+        annualSavingReturnRate,
+        annualRetirementReturnRate,
+        annualInflationRate,
+        exchangeRate
+      },
+      results: {
+        futureMonthlyIncome,
+        requiredRetirementAssets,
+        futureValueOfCurrentAssets,
+        assetGap,
+        requiredMonthlySaving,
+        planStatus,
+        monthlySavingReturnRate,
+        monthlyRetirementReturnRate
+      }
+    };
+
+    localStorage.setItem('retirementData', JSON.stringify(data));
+    window.location.href = 'detail.html';
+  }
+
+  onInputChange();
+</script>
+</body>
+</html>

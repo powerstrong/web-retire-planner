@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>은퇴 설계 상세 분석</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:      #111111;
+      --border:  rgba(255,255,255,0.15);
+      --border2: rgba(255,255,255,0.4);
+      --text:    #ffffff;
+      --muted:   rgba(255,255,255,0.45);
+      --success: #4ade80;
+      --info:    #60a5fa;
+      --warning: #fb923c;
+      --danger:  #f87171;
+      --radius:  2px;
+    }
+
+    body {
+      font-family: 'Pretendard', 'Apple SD Gothic Neo', 'Noto Sans KR', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      line-height: 1.6;
+    }
+
+    /* ── TOP NAV ─────────────────────────────── */
+    .topnav {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 22px 32px;
+      border-bottom: 1px solid var(--border);
+    }
+    .topnav-logo {
+      font-size: .78rem;
+      font-weight: 400;
+      letter-spacing: .18em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.75);
+    }
+    .topnav-back {
+      font-size: .75rem;
+      letter-spacing: .12em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      transition: color .2s;
+    }
+    .topnav-back:hover { color: #ffffff; }
+
+    /* ── HERO ─────────────────────────────────── */
+    .hero {
+      padding: 56px 32px 40px;
+      border-bottom: 1px solid var(--border);
+      max-width: 1280px;
+      margin: 0 auto;
+    }
+    .hero h1 {
+      font-size: clamp(1.6rem, 4vw, 2.6rem);
+      font-weight: 300;
+      letter-spacing: .02em;
+      margin-bottom: 20px;
+    }
+    .hero-divider {
+      width: 240px;
+      height: 1px;
+      background: rgba(255,255,255,0.4);
+      margin-bottom: 20px;
+    }
+    .hero-inputs {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 6px 24px;
+    }
+    .hero-input-item {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.45);
+      letter-spacing: .06em;
+    }
+    .hero-input-item span {
+      color: rgba(255,255,255,0.75);
+      margin-left: 4px;
+    }
+
+    /* ── CONTENT WRAP ─────────────────────────── */
+    .content-wrap {
+      max-width: 1280px;
+      margin: 0 auto;
+      padding: 0 0 80px;
+    }
+
+    /* ── SECTION ──────────────────────────────── */
+    .section {
+      border-bottom: 1px solid var(--border);
+    }
+    .section-header {
+      padding: 18px 32px;
+      font-size: .68rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .16em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    .section-body { padding: 28px 32px; }
+
+    /* ── METRIC CARDS GRID ────────────────────── */
+    .metric-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 0;
+      border: 1px solid var(--border);
+    }
+    .metric-card {
+      padding: 28px 24px;
+      border-right: 1px solid var(--border);
+      border-bottom: 1px solid var(--border);
+      transition: background .18s;
+    }
+    .metric-card:hover { background: rgba(255,255,255,0.03); }
+    .metric-card:nth-child(3n) { border-right: none; }
+    .metric-card.full {
+      grid-column: 1 / -1;
+      border-right: none;
+    }
+    .metric-card.last-row { border-bottom: none; }
+    .mc-label {
+      font-size: .65rem;
+      color: var(--muted);
+      text-transform: uppercase;
+      letter-spacing: .14em;
+      margin-bottom: 12px;
+    }
+    .mc-value {
+      font-size: 1.8rem;
+      font-weight: 300;
+      margin-bottom: 6px;
+    }
+    .mc-usd {
+      font-size: .88rem;
+      color: var(--info);
+      margin-bottom: 8px;
+    }
+    .mc-sub {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.3);
+    }
+    .mc-status { margin-top: 10px; }
+    .accent-gap .mc-value   { color: var(--warning); }
+    .accent-saving .mc-value { color: #ffffff; }
+
+    /* ── STATUS BADGE ─────────────────────────── */
+    .status-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      padding: 3px 10px;
+      border: 1px solid;
+      border-radius: var(--radius);
+      font-size: .68rem;
+      font-weight: 400;
+      letter-spacing: .1em;
+      text-transform: uppercase;
+    }
+    .status-충분 { border-color: var(--success); color: var(--success); }
+    .status-양호 { border-color: var(--info);    color: var(--info); }
+    .status-주의 { border-color: var(--warning);  color: var(--warning); }
+    .status-위험 { border-color: var(--danger);   color: var(--danger); }
+
+    /* ── TABLE ────────────────────────────────── */
+    .table-wrap {
+      overflow-x: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: .82rem;
+    }
+    thead th {
+      padding: 10px 14px;
+      text-align: right;
+      font-size: .65rem;
+      font-weight: 400;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      border-bottom: 1px solid var(--border);
+    }
+    thead th:first-child { text-align: center; }
+    tbody td {
+      padding: 9px 14px;
+      text-align: right;
+      color: rgba(255,255,255,0.75);
+      border-bottom: 1px solid rgba(255,255,255,0.05);
+    }
+    tbody td:first-child {
+      text-align: center;
+      color: var(--muted);
+      font-size: .72rem;
+      letter-spacing: .06em;
+    }
+    tbody tr:last-child td { border-bottom: none; }
+    tbody tr.summary-row td {
+      color: #ffffff;
+      font-weight: 400;
+      border-top: 1px solid var(--border);
+      border-bottom: none;
+      background: rgba(255,255,255,0.03);
+    }
+    tbody tr.highlight-row td {
+      background: rgba(255,255,255,0.05);
+      color: #ffffff;
+    }
+    tbody tr.current-rate-row td {
+      background: rgba(96,165,250,0.08);
+      color: var(--info);
+    }
+    tbody tr.zero-balance td {
+      color: rgba(255,255,255,0.3);
+    }
+
+    /* ── CHARTS ───────────────────────────────── */
+    .charts-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 0;
+      border: 1px solid var(--border);
+    }
+    .chart-panel {
+      border-right: 1px solid var(--border);
+      padding: 20px;
+    }
+    .chart-panel:last-child { border-right: none; }
+    .chart-panel-label {
+      font-size: .65rem;
+      text-transform: uppercase;
+      letter-spacing: .12em;
+      color: var(--muted);
+      margin-bottom: 12px;
+    }
+    .chart-wrap { position: relative; height: 300px; }
+
+    /* ── NO DATA ──────────────────────────────── */
+    .no-data {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 60vh;
+      gap: 20px;
+      text-align: center;
+      padding: 40px;
+    }
+    .no-data h2 {
+      font-size: 1.4rem;
+      font-weight: 300;
+      color: rgba(255,255,255,0.6);
+    }
+    .no-data p {
+      font-size: .85rem;
+      color: rgba(255,255,255,0.35);
+    }
+    .no-data a {
+      font-size: .75rem;
+      letter-spacing: .14em;
+      text-transform: uppercase;
+      color: rgba(255,255,255,0.55);
+      text-decoration: none;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 10px 22px;
+      transition: all .2s;
+    }
+    .no-data a:hover {
+      color: #ffffff;
+      border-color: rgba(255,255,255,0.8);
+    }
+
+    /* ── DISCLAIMER ───────────────────────────── */
+    .disclaimer {
+      max-width: 1280px;
+      margin: 0 auto 40px;
+      padding: 0 32px;
+    }
+    .disclaimer p {
+      font-size: .72rem;
+      color: rgba(255,255,255,0.25);
+      text-align: center;
+      border-top: 1px solid var(--border);
+      padding-top: 24px;
+    }
+
+    /* ── RESPONSIVE ───────────────────────────── */
+    @media (max-width: 900px) {
+      .hero { padding: 40px 20px 28px; }
+      .section-header { padding: 14px 20px; }
+      .section-body { padding: 20px; }
+      .metric-grid { grid-template-columns: 1fr 1fr; }
+      .metric-card:nth-child(3n) { border-right: 1px solid var(--border); }
+      .metric-card:nth-child(even) { border-right: none; }
+      .charts-grid { grid-template-columns: 1fr; }
+      .chart-panel { border-right: none; border-bottom: 1px solid var(--border); }
+      .chart-panel:last-child { border-bottom: none; }
+    }
+    @media (max-width: 600px) {
+      .topnav { padding: 16px 20px; }
+      .metric-grid { grid-template-columns: 1fr; }
+      .metric-card { border-right: none !important; }
+      .metric-card.full { grid-column: auto; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- NAV -->
+<nav class="topnav">
+  <span class="topnav-logo">라임구조엔지니어링</span>
+  <a href="index.html" class="topnav-back">&#8592; 계산기로 돌아가기</a>
+</nav>
+
+<!-- 데이터 없음 상태 (초기에 숨김) -->
+<div id="noData" class="no-data" style="display:none;">
+  <h2>분석 데이터가 없습니다</h2>
+  <p>계산기로 돌아가서 먼저 계산해 주세요.</p>
+  <a href="index.html">계산기로 이동</a>
+</div>
+
+<!-- 메인 콘텐츠 -->
+<div id="mainContent" style="display:none;">
+
+  <!-- HERO -->
+  <div class="hero">
+    <h1>은퇴 설계 상세 분석</h1>
+    <div class="hero-divider"></div>
+    <div class="hero-inputs" id="heroInputs"></div>
+  </div>
+
+  <div class="content-wrap">
+
+    <!-- 섹션 1: 핵심 지표 -->
+    <div class="section">
+      <div class="section-header">핵심 지표</div>
+      <div class="section-body">
+        <div class="metric-grid" id="metricGrid">
+          <!-- JS로 채움 -->
+        </div>
+      </div>
+    </div>
+
+    <!-- 섹션 2: 연도별 자산 적립 현황 -->
+    <div class="section">
+      <div class="section-header">연도별 자산 적립 현황 (은퇴 전)</div>
+      <div class="section-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>경과 년</th>
+                <th>연도 초 자산</th>
+                <th>연간 납입액</th>
+                <th>운용 수익</th>
+                <th>연도 말 자산</th>
+              </tr>
+            </thead>
+            <tbody id="accumulationBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 섹션 3: 연도별 인출 현황 -->
+    <div class="section">
+      <div class="section-header">연도별 인출 현황 (은퇴 후)</div>
+      <div class="section-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>경과 년</th>
+                <th>연도 초 잔액</th>
+                <th>연간 인출액</th>
+                <th>운용 수익</th>
+                <th>연도 말 잔액</th>
+              </tr>
+            </thead>
+            <tbody id="withdrawalBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 섹션 4: 민감도 분석 -->
+    <div class="section">
+      <div class="section-header">민감도 분석 — 준비 기간 수익률 변화 시</div>
+      <div class="section-body">
+        <div class="table-wrap">
+          <table>
+            <thead>
+              <tr>
+                <th>연 수익률</th>
+                <th>월 수익률</th>
+                <th>필요 은퇴자금</th>
+                <th>월 저축 필요액</th>
+              </tr>
+            </thead>
+            <tbody id="sensitivityBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- 섹션 5: 시각화 차트 -->
+    <div class="section">
+      <div class="section-header">자산 변화 시뮬레이션</div>
+      <div class="section-body">
+        <div class="charts-grid">
+          <div class="chart-panel">
+            <div class="chart-panel-label">은퇴 전 자산 성장</div>
+            <div class="chart-wrap"><canvas id="chartGrowth"></canvas></div>
+          </div>
+          <div class="chart-panel">
+            <div class="chart-panel-label">은퇴 후 자금 소진</div>
+            <div class="chart-wrap"><canvas id="chartDecline"></canvas></div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- /content-wrap -->
+
+  <!-- DISCLAIMER -->
+  <div class="disclaimer">
+    <p>본 계산기는 단순 참고용이며 세금, 국민연금, 퇴직연금, 건강보험료, 투자 손실 가능성은 반영하지 않습니다.</p>
+  </div>
+
+</div><!-- /mainContent -->
+
+<script>
+  // ── 유틸 ───────────────────────────────────────────────────────────────────
+  function fmt(won) {
+    if (Math.abs(won) >= 10000) return (won / 10000).toFixed(1) + '억원';
+    return won.toFixed(1) + '만원';
+  }
+
+  function toUSD(manwon, exchangeRate) {
+    const usd = manwon * 10000 / exchangeRate;
+    if (usd >= 1000000) return '$' + (usd / 1000000).toFixed(1) + 'M';
+    if (usd >= 1000)    return '$' + (usd / 1000).toFixed(1) + 'K';
+    return '$' + usd.toFixed(0);
+  }
+
+  function makeChartOptions() {
+    return {
+      responsive: true,
+      maintainAspectRatio: false,
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          backgroundColor: 'rgba(20,20,20,0.92)',
+          borderColor: 'rgba(255,255,255,0.15)',
+          borderWidth: 1,
+          titleColor: 'rgba(255,255,255,0.5)',
+          bodyColor: '#ffffff',
+          callbacks: { label: ctx => ' ' + fmt(ctx.parsed.y) }
+        }
+      },
+      scales: {
+        x: {
+          grid: { display: false },
+          border: { color: 'rgba(255,255,255,0.1)' },
+          ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 10 } }
+        },
+        y: {
+          grid: { color: 'rgba(255,255,255,0.05)' },
+          border: { dash: [3,3], color: 'transparent' },
+          ticks: { color: 'rgba(255,255,255,0.35)', font: { size: 10 }, callback: v => fmt(v) }
+        }
+      },
+      elements: { point: { radius: 2, hoverRadius: 5 } }
+    };
+  }
+
+  // ── 데이터 로드 ─────────────────────────────────────────────────────────────
+  const raw = localStorage.getItem('retirementData');
+  if (!raw) {
+    document.getElementById('noData').style.display = 'flex';
+  } else {
+    document.getElementById('mainContent').style.display = 'block';
+    const d = JSON.parse(raw);
+    const inp = d.inputs;
+    const res = d.results;
+
+    const {
+      desiredMonthlyIncome, savingYears, retirementYears, currentAssets,
+      annualSavingReturnRate, annualRetirementReturnRate, annualInflationRate, exchangeRate
+    } = inp;
+
+    const {
+      futureMonthlyIncome, requiredRetirementAssets, futureValueOfCurrentAssets,
+      assetGap, requiredMonthlySaving, planStatus,
+      monthlySavingReturnRate, monthlyRetirementReturnRate
+    } = res;
+
+    const savingMonths     = savingYears * 12;
+    const retirementMonths = retirementYears * 12;
+
+    // ── Hero 입력 요약 ─────────────────────────────────────────────────────
+    const heroInputs = document.getElementById('heroInputs');
+    const inputItems = [
+      ['희망 월 수령액', desiredMonthlyIncome + '만원'],
+      ['준비 기간', savingYears + '년'],
+      ['수령 기간', retirementYears + '년'],
+      ['현재 보유 자금', fmt(currentAssets)],
+      ['준비 기간 수익률', annualSavingReturnRate + '%'],
+      ['은퇴 후 수익률', annualRetirementReturnRate + '%'],
+      ['물가상승률', annualInflationRate + '%'],
+      ['달러 환율', exchangeRate.toLocaleString() + '원/$'],
+    ];
+    heroInputs.innerHTML = inputItems.map(([k, v]) =>
+      `<div class="hero-input-item">${k}<span>${v}</span></div>`
+    ).join('');
+
+    // ── 핵심 지표 카드 ─────────────────────────────────────────────────────
+    const statusClassMap = { '충분': 'status-충분', '양호': 'status-양호', '주의': 'status-주의', '위험': 'status-위험' };
+    const statusClass = statusClassMap[planStatus] || 'status-위험';
+
+    const cards = [
+      {
+        label: '은퇴 시점 월 필요금액',
+        value: fmt(futureMonthlyIncome),
+        usd: toUSD(futureMonthlyIncome, exchangeRate),
+        sub: '물가상승 반영',
+        cls: ''
+      },
+      {
+        label: '필요 은퇴자금',
+        value: fmt(requiredRetirementAssets),
+        usd: toUSD(requiredRetirementAssets, exchangeRate),
+        sub: '연금 현재가치 기준',
+        cls: ''
+      },
+      {
+        label: '현재 자산의 미래가치',
+        value: fmt(futureValueOfCurrentAssets),
+        usd: toUSD(futureValueOfCurrentAssets, exchangeRate),
+        sub: '복리 성장 반영',
+        cls: ''
+      },
+      {
+        label: '부족 금액',
+        value: fmt(assetGap),
+        usd: toUSD(assetGap, exchangeRate),
+        sub: '추가 준비 필요액',
+        cls: 'accent-gap'
+      },
+      {
+        label: '월 저축 필요액',
+        value: fmt(requiredMonthlySaving),
+        usd: toUSD(requiredMonthlySaving, exchangeRate),
+        sub: '',
+        cls: 'accent-saving full last-row',
+        badge: `<span class="status-badge ${statusClass}">${planStatus}</span>`
+      },
+    ];
+
+    document.getElementById('metricGrid').innerHTML = cards.map(c => `
+      <div class="metric-card ${c.cls}">
+        <div class="mc-label">${c.label}</div>
+        <div class="mc-value">${c.value}</div>
+        <div class="mc-usd">${c.usd}</div>
+        ${c.sub ? `<div class="mc-sub">${c.sub}</div>` : ''}
+        ${c.badge ? `<div class="mc-status">${c.badge}</div>` : ''}
+      </div>
+    `).join('');
+
+    // ── 섹션 2: 연도별 자산 적립 현황 ────────────────────────────────────
+    {
+      let asset = currentAssets;
+      const annualSaving = requiredMonthlySaving * 12;
+      const rows = [];
+
+      for (let yr = 1; yr <= savingYears; yr++) {
+        const startAsset = asset;
+        const annualReturn = startAsset * (Math.pow(1 + monthlySavingReturnRate, 12) - 1)
+          + annualSaving * (Math.pow(1 + monthlySavingReturnRate, 12) - 1) / (monthlySavingReturnRate || 1) * (monthlySavingReturnRate || 0);
+
+        // 월별로 정확히 계산
+        let endAsset = startAsset;
+        for (let m = 0; m < 12; m++) {
+          endAsset = endAsset * (1 + monthlySavingReturnRate) + requiredMonthlySaving;
+        }
+        const realAnnualReturn = endAsset - startAsset - annualSaving;
+
+        const isLast = yr === savingYears;
+        rows.push(`
+          <tr class="${isLast ? 'summary-row' : ''}">
+            <td>${isLast ? '은퇴 시점' : yr + '년'}</td>
+            <td>${fmt(startAsset)}</td>
+            <td>${fmt(annualSaving)}</td>
+            <td>${fmt(realAnnualReturn)}</td>
+            <td>${fmt(endAsset)}</td>
+          </tr>
+        `);
+        asset = endAsset;
+      }
+
+      document.getElementById('accumulationBody').innerHTML = rows.join('');
+    }
+
+    // ── 섹션 3: 연도별 인출 현황 ──────────────────────────────────────────
+    {
+      let asset = requiredRetirementAssets;
+      const annualWithdrawal = futureMonthlyIncome * 12;
+      const rows = [];
+      let totalWithdrawn = 0;
+
+      for (let yr = 1; yr <= retirementYears; yr++) {
+        const startAsset = asset;
+        let endAsset = startAsset;
+        for (let m = 0; m < 12; m++) {
+          endAsset = endAsset * (1 + monthlyRetirementReturnRate) - futureMonthlyIncome;
+          endAsset = Math.max(0, endAsset);
+        }
+        const realAnnualReturn = endAsset - startAsset + annualWithdrawal;
+        const isLast = yr === retirementYears;
+        const isZero = endAsset === 0;
+        totalWithdrawn += annualWithdrawal;
+
+        rows.push(`
+          <tr class="${isLast ? 'summary-row' : ''} ${isZero && !isLast ? 'zero-balance' : ''}">
+            <td>${isLast ? '수령 종료' : yr + '년'}</td>
+            <td>${fmt(startAsset)}</td>
+            <td>${fmt(annualWithdrawal)}</td>
+            <td>${fmt(Math.max(0, realAnnualReturn))}</td>
+            <td>${fmt(endAsset)}</td>
+          </tr>
+        `);
+        asset = endAsset;
+      }
+
+      // 총 인출액 행
+      rows.push(`
+        <tr class="highlight-row">
+          <td>합계</td>
+          <td>—</td>
+          <td>${fmt(totalWithdrawn)}</td>
+          <td>—</td>
+          <td>—</td>
+        </tr>
+      `);
+
+      document.getElementById('withdrawalBody').innerHTML = rows.join('');
+    }
+
+    // ── 섹션 4: 민감도 분석 ───────────────────────────────────────────────
+    {
+      const rates = [1, 2, 3, 4, 5, 6, 7, 8];
+      const rows = [];
+
+      for (const rate of rates) {
+        const mRate = Math.pow(1 + rate / 100, 1 / 12) - 1;
+
+        // 필요 은퇴자금은 은퇴 후 수익률 기준이므로 고정
+        const reqAssets = requiredRetirementAssets;
+
+        // 현재 자산 미래가치
+        const fvCurrentAssets = currentAssets * Math.pow(1 + mRate, savingMonths);
+        const gap = Math.max(0, reqAssets - fvCurrentAssets);
+
+        let monthlySaving;
+        if (gap === 0) {
+          monthlySaving = 0;
+        } else if (mRate !== 0) {
+          monthlySaving = gap * mRate / (Math.pow(1 + mRate, savingMonths) - 1);
+        } else {
+          monthlySaving = gap / savingMonths;
+        }
+
+        const isCurrent = rate === annualSavingReturnRate;
+        rows.push(`
+          <tr class="${isCurrent ? 'current-rate-row' : ''}">
+            <td>${rate}%${isCurrent ? ' ★' : ''}</td>
+            <td>${(mRate * 100).toFixed(4)}%</td>
+            <td>${fmt(reqAssets)}</td>
+            <td>${fmt(monthlySaving)}</td>
+          </tr>
+        `);
+      }
+
+      document.getElementById('sensitivityBody').innerHTML = rows.join('');
+    }
+
+    // ── 섹션 5: 차트 ──────────────────────────────────────────────────────
+    // Chart 1: 은퇴 전 자산 성장
+    {
+      let asset = currentAssets;
+      const labels = ['현재'];
+      const data   = [parseFloat(asset.toFixed(1))];
+      for (let m = 1; m <= savingMonths; m++) {
+        asset = asset * (1 + monthlySavingReturnRate) + requiredMonthlySaving;
+        if (m % 12 === 0) {
+          labels.push(m / 12 + '년');
+          data.push(parseFloat(asset.toFixed(1)));
+        }
+      }
+      const ctx = document.getElementById('chartGrowth').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            borderColor: 'rgba(255,255,255,0.7)',
+            backgroundColor: 'rgba(255,255,255,0.04)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2
+          }]
+        },
+        options: makeChartOptions()
+      });
+    }
+
+    // Chart 2: 은퇴 후 자금 소진
+    {
+      let asset = requiredRetirementAssets;
+      const labels = ['은퇴'];
+      const data   = [parseFloat(asset.toFixed(1))];
+      for (let m = 1; m <= retirementMonths; m++) {
+        asset = asset * (1 + monthlyRetirementReturnRate) - futureMonthlyIncome;
+        asset = Math.max(0, asset);
+        if (m % 12 === 0) {
+          labels.push(m / 12 + '년');
+          data.push(parseFloat(asset.toFixed(1)));
+        }
+      }
+      const ctx = document.getElementById('chartDecline').getContext('2d');
+      new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [{
+            data,
+            borderColor: 'rgba(251,146,60,0.85)',
+            backgroundColor: 'rgba(251,146,60,0.06)',
+            fill: true,
+            tension: 0.35,
+            borderWidth: 2
+          }]
+        },
+        options: makeChartOptions()
+      });
+    }
+  }
+</script>
+</body>
+</html>
